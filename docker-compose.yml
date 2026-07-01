@@ -1,0 +1,59 @@
+# =====================================================================
+# Eventify — full stack: PostgreSQL + Express backend + Vite frontend
+#
+#   docker compose up --build
+#
+#   Frontend : http://localhost:8080
+#   Backend  : http://localhost:4000  (health: /api/health)
+#   Database : localhost:5432         (postgres / postgres / eventify)
+#
+# Login demo: manager@eventify.io / manager123  (juga admin & security)
+# =====================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eventify
+    ports:
+      - "5432:5432"
+    volumes:
+      - eventify-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eventify"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/eventify
+      DEFAULT_EVENT_ID: evt-001
+      # Opsional — kalau diisi, laporan AI pakai Claude API; kalau kosong,
+      # otomatis fallback ke ringkasan lokal deterministik.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      args:
+        # Browser mengakses backend lewat port host, jadi arahkan ke localhost.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000}
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  eventify-db:

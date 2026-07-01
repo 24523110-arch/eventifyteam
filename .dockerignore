@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+server
+*.md
+.env
+.env.*
+.DS_Store
+PSI - PRD Eventify.docx.pdf
+Dockerfile
+docker-compose.yml
