@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-white/5;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-surface-void text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(168, 85, 247, 0.06), transparent 45%),
+      radial-gradient(circle at 80% 0%, rgba(217, 70, 239, 0.05), transparent 45%);
+    background-attachment: fixed;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.3);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(168, 85, 247, 0.5);
+  }
+  :focus-visible {
+    outline: 2px solid #A855F7;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Core glass panel used across all cards, sidebars, modals */
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08];
+  }
+  .glass-panel {
+    @apply glass rounded-2xl shadow-glass;
+  }
+  .glass-card {
+    @apply glass-panel relative overflow-hidden transition-all duration-300;
+  }
+  .glass-card:hover {
+    @apply border-primary/25 shadow-glow-sm;
+    transform: translateY(-1px);
+  }
+  .neon-border {
+    border-image: linear-gradient(135deg, #A855F7, #D946EF) 1;
+  }
+  .text-gradient {
+    @apply bg-neon-gradient bg-clip-text text-transparent;
+  }
+  .btn-primary {
+    @apply bg-neon-gradient text-white font-semibold rounded-xl shadow-glow-sm transition-all duration-300 hover:shadow-glow-md hover:brightness-105 active:scale-[0.98];
+  }
+  .input-glass {
+    @apply glass rounded-xl px-4 py-3 text-ink placeholder:text-ink-faint focus:border-primary/40 transition-all duration-200 outline-none w-full;
+  }
+  .live-dot {
+    @apply w-2 h-2 rounded-full bg-status-danger animate-pulse-live;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+}
