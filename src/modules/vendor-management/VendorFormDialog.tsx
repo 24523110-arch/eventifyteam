@@ -4,7 +4,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { VENDOR_CATEGORIES } from '@/data/vendorData'
+import { useReferenceStore } from '@/store/referenceStore'
 import type { Vendor, VendorStatus } from '@/types'
 
 const STATUSES: VendorStatus[] = ['not_arrived', 'check_in', 'setup', 'ready', 'active', 'completed']
@@ -24,8 +24,11 @@ interface FormErrors {
 }
 
 export function VendorFormDialog({ open, onOpenChange, vendor, onSubmit }: VendorFormDialogProps) {
+  const vendorCategories = useReferenceStore((s) => s.vendorCategories)
+  const defaultCategory = vendorCategories[0] ?? ''
+
   const [name, setName] = useState('')
-  const [category, setCategory] = useState(VENDOR_CATEGORIES[0])
+  const [category, setCategory] = useState('')
   const [arrivalTime, setArrivalTime] = useState('')
   const [status, setStatus] = useState<VendorStatus>('not_arrived')
   const [assignedArea, setAssignedArea] = useState('')
@@ -35,14 +38,14 @@ export function VendorFormDialog({ open, onOpenChange, vendor, onSubmit }: Vendo
   useEffect(() => {
     if (open) {
       setName(vendor?.name ?? '')
-      setCategory(vendor?.category ?? VENDOR_CATEGORIES[0])
+      setCategory(vendor?.category ?? defaultCategory)
       setArrivalTime(vendor?.arrivalTime ?? '')
       setStatus(vendor?.status ?? 'not_arrived')
       setAssignedArea(vendor?.assignedArea ?? '')
       setContact(vendor?.contact ?? '')
       setErrors({})
     }
-  }, [open, vendor])
+  }, [open, vendor, defaultCategory])
 
   function validate(): boolean {
     const next: FormErrors = {}
@@ -81,7 +84,7 @@ export function VendorFormDialog({ open, onOpenChange, vendor, onSubmit }: Vendo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {VENDOR_CATEGORIES.map((c) => (
+                  {vendorCategories.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>

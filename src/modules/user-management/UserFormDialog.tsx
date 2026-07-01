@@ -4,7 +4,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ROLE_OPTIONS } from '@/data/userData'
+import { useReferenceStore } from '@/store/referenceStore'
 import { isValidEmail } from '@/utils'
 import type { AppUser, UserRole } from '@/types'
 
@@ -21,6 +21,7 @@ interface FormErrors {
 }
 
 export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormDialogProps) {
+  const roleOptions = useReferenceStore((s) => s.roles)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<UserRole>('admin')
@@ -78,7 +79,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLE_OPTIONS.map((r) => (
+                {roleOptions.map((r) => (
                   <SelectItem key={r.value} value={r.value}>
                     {r.label}
                   </SelectItem>

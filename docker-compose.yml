@@ -33,6 +33,10 @@ services:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/eventify
       DEFAULT_EVENT_ID: evt-001
+      # Live data feed (simulasi ticketing + sensor crowd). Set 'false' untuk
+      # mematikan; SIMULATOR_TICK_MS mengatur interval update (default 8000).
+      SIMULATOR_ENABLED: ${SIMULATOR_ENABLED:-true}
+      SIMULATOR_TICK_MS: ${SIMULATOR_TICK_MS:-8000}
       # Opsional — kalau diisi, laporan AI pakai Claude API; kalau kosong,
       # otomatis fallback ke ringkasan lokal deterministik.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

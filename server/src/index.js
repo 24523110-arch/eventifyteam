@@ -9,7 +9,9 @@ import incidentRoutes from './routes/incidents.js'
 import dashboardRoutes from './routes/dashboard.js'
 import notificationRoutes from './routes/notifications.js'
 import reportRoutes from './routes/reports.js'
+import referenceRoutes from './routes/reference.js'
 import { pool } from './db/pool.js'
+import { startSimulator } from './simulator.js'
 
 dotenv.config()
 
@@ -35,6 +37,7 @@ app.use('/api/incidents', incidentRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/reports', reportRoutes)
+app.use('/api/reference', referenceRoutes)
 
 // Fallback error handler for anything that slips past route-level try/catch.
 app.use((err, _req, res, _next) => {
@@ -44,4 +47,7 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`Eventify server listening on http://localhost:${PORT}`)
+  // Start the live data feed once the HTTP server is up. It self-heals on
+  // transient DB errors and is a no-op when SIMULATOR_ENABLED=false.
+  startSimulator()
 })

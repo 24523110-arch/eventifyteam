@@ -7,7 +7,7 @@ interface NotificationState {
   notifications: NotificationItem[]
   activityFeed: ActivityFeedItem[]
   isLoading: boolean
-  fetchNotifications: () => Promise<void>
+  fetchNotifications: (opts?: { silent?: boolean }) => Promise<void>
   unreadCount: () => number
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
@@ -24,8 +24,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   activityFeed: [],
   isLoading: false,
 
-  fetchNotifications: async () => {
-    set({ isLoading: true })
+  fetchNotifications: async (opts) => {
+    const silent = opts?.silent ?? false
+    if (!silent) set({ isLoading: true })
     try {
       const { notifications, activityFeed } = await api.get<{
         notifications: NotificationItem[]
@@ -34,7 +35,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       set({ notifications, activityFeed, isLoading: false })
     } catch (err) {
       set({ isLoading: false })
-      reportError(err, 'Gagal memuat notifikasi.')
+      if (!silent) reportError(err, 'Gagal memuat notifikasi.')
     }
   },
 

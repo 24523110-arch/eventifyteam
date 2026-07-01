@@ -4,7 +4,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { SECURITY_TEAMS } from '@/data/securityData'
+import { useReferenceStore } from '@/store/referenceStore'
 import type { Incident, IncidentSeverity, IncidentStatus } from '@/types'
 
 const SEVERITIES: IncidentSeverity[] = ['low', 'medium', 'high', 'critical']
@@ -23,11 +23,16 @@ interface FormErrors {
 }
 
 export function IncidentFormDialog({ open, onOpenChange, incident, onSubmit }: IncidentFormDialogProps) {
+  const securityTeams = useReferenceStore((s) => s.securityTeams)
+  // "Unassigned" is the schema-level sentinel (incidents.assigned_team default)
+  // and sorts last in the team list — use it as the new-incident default.
+  const defaultTeam = securityTeams[securityTeams.length - 1] ?? 'Unassigned'
+
   const [area, setArea] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<IncidentSeverity>('low')
   const [status, setStatus] = useState<IncidentStatus>('new')
-  const [assignedTeam, setAssignedTeam] = useState(SECURITY_TEAMS[SECURITY_TEAMS.length - 1])
+  const [assignedTeam, setAssignedTeam] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
@@ -36,10 +41,10 @@ export function IncidentFormDialog({ open, onOpenChange, incident, onSubmit }: I
       setDescription(incident?.description ?? '')
       setSeverity(incident?.severity ?? 'low')
       setStatus(incident?.status ?? 'new')
-      setAssignedTeam(incident?.assignedTeam ?? SECURITY_TEAMS[SECURITY_TEAMS.length - 1])
+      setAssignedTeam(incident?.assignedTeam ?? defaultTeam)
       setErrors({})
     }
-  }, [open, incident])
+  }, [open, incident, defaultTeam])
 
   function validate(): boolean {
     const next: FormErrors = {}
@@ -117,7 +122,7 @@ export function IncidentFormDialog({ open, onOpenChange, incident, onSubmit }: I
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SECURITY_TEAMS.map((t) => (
+                {securityTeams.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}
                   </SelectItem>

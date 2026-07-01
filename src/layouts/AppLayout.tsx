@@ -3,9 +3,11 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
 import { Toaster } from '@/components/Toaster'
+import { useRealtimePolling } from '@/hooks/useRealtimePolling'
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  useRealtimePolling()
 
   return (
     <div className="flex min-h-screen bg-surface-void">

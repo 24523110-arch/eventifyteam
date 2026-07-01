@@ -29,7 +29,7 @@ security@eventify.io / security123
 - **Notifications**: bell panel opens, mark-as-read, mark-all-as-read, clear all — all persisted.
 - **AI Concert Evaluation Report (Manager → Reports)**: pulls ticket/attendance/finance data from the store, calls the backend, which generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary), builds a PDF via `pdfkit`, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
 - **Responsive**: sidebar becomes a slide-in drawer on mobile/tablet (`<lg`), all grids collapse to single/double column.
-- **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `settingsStore`, `toastStore`. Every store now hydrates from the Express API on load and pushes CRUD actions back to it — nothing reads static dummy arrays anymore.
+- **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `referenceStore`, `settingsStore`, `toastStore`. Every store hydrates from the Express API on load and pushes CRUD actions back to it — there are no static data files left in the frontend. Even the form dropdown options (role list, security teams, vendor categories) come from the database via `GET /api/reference`.
 
 ## What was removed (per "less is more")
 
@@ -78,10 +78,8 @@ src/
 │                                 # dialog, select, input, label, button, confirm-dialog (shadcn-style)
 ├── routes/                      # router, ProtectedRoute, RoleRoute, ReportsRouter
 ├── store/                       # authStore, dashboardStore, notificationStore, userStore,
-│                                 # vendorStore, incidentStore, settingsStore, toastStore
-│                                 # (all fetch/mutate through src/services/api.ts now)
-├── data/                        # ROLE_OPTIONS, SECURITY_TEAMS, VENDOR_CATEGORIES — static form
-│                                 # dropdown config only, no longer used as data source
+│                                 # vendorStore, incidentStore, referenceStore, settingsStore,
+│                                 # toastStore (all fetch/mutate through src/services/api.ts)
 ├── services/                    # api (generic fetch client), reportService (report endpoint)
 └── types/                       # domain types (3-role scope)
 
@@ -102,6 +100,7 @@ See `server/src/db/schema.sql` for the full DDL. Summary:
 - `app_users` — auth + User Management
 - `vendors` — Vendor Management
 - `security_teams`, `incidents` — Incident Center
+- `role_options`, `vendor_categories` — lookup tables backing the form dropdowns (served via `GET /api/reference`, alongside `security_teams`)
 - `crowd_zones`, `density_trend` — Live/Crowd Monitoring
 - `notifications`, `activity_feed` — bell panel
 - `finance_summary`, `finance_breakdown`, `revenue_trend`, `ticket_summary`, `hourly_sales`, `daily_revenue`, `checkin_conversion` — Finance dashboard + Ticket Sales

@@ -36,6 +36,20 @@ export function formatClockTime(dateInput = new Date()) {
   return `${parts.hour}:${parts.minute}`
 }
 
+// Matches the "20:14:02" activity-feed timestamps (clock time with seconds).
+export function formatClockSeconds(dateInput = new Date()) {
+  const d = new Date(dateInput)
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: EVENT_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]))
+  return `${parts.hour}:${parts.minute}:${parts.second}`
+}
+
 // Matches userStore's initials() helper (first letter of the first two words).
 export function initials(name) {
   return name

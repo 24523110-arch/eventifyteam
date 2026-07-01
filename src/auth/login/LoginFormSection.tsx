@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, ChevronDown, Check, Music4, AlertCircle } from 'lucide-react'
-import { ROLE_OPTIONS } from '@/data/userData'
+import { useReferenceStore } from '@/store/referenceStore'
 import { useAuthStore, ROLE_TO_DASHBOARD } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
 import type { UserRole } from '@/types'
@@ -20,6 +20,7 @@ export function LoginFormSection() {
   const authError = useAuthStore((s) => s.error)
   const clearError = useAuthStore((s) => s.clearError)
   const showToast = useToastStore((s) => s.show)
+  const roleOptions = useReferenceStore((s) => s.roles)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,7 +31,7 @@ export function LoginFormSection() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [touched, setTouched] = useState(false)
 
-  const selectedRole = ROLE_OPTIONS.find((r) => r.value === role)!
+  const selectedRole = roleOptions.find((r) => r.value === role)
 
   function validate(): boolean {
     const errors: FieldErrors = {}
@@ -150,7 +151,7 @@ export function LoginFormSection() {
               onClick={() => setRoleOpen((o) => !o)}
               className="input-glass flex items-center justify-between text-left"
             >
-              <span className="text-ink">{selectedRole.label}</span>
+              <span className="text-ink">{selectedRole?.label ?? 'Pilih role'}</span>
               <ChevronDown className={cn('w-4 h-4 text-ink-faint transition-transform', roleOpen && 'rotate-180')} />
             </button>
 
@@ -163,7 +164,7 @@ export function LoginFormSection() {
                   transition={{ duration: 0.18 }}
                   className="absolute z-20 mt-2 w-full glass-panel p-2"
                 >
-                  {ROLE_OPTIONS.map((opt) => (
+                  {roleOptions.map((opt) => (
                     <button
                       type="button"
                       key={opt.value}

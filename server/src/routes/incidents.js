@@ -1,6 +1,8 @@
 import { Router } from 'express'
-import { query, withTransaction, DEFAULT_EVENT_ID } from '../db/pool.js'
+import { query, DEFAULT_EVENT_ID } from '../db/pool.js'
 import { formatClockTime } from '../utils/format.js'
+import { createIncident } from '../services/incidents.js'
+import { notifyIncident } from '../notify.js'
 
 const router = Router()
 const VALID_SEVERITIES = ['low', 'medium', 'high', 'critical']
@@ -26,17 +28,6 @@ function validateInput(body) {
   return null
 }
 
-async function nextIncidentId(client) {
-  const { rows } = await client.query(
-    `SELECT id FROM incidents WHERE id LIKE 'INC-%'`
-  )
-  const max = rows
-    .map((r) => parseInt(r.id.replace('INC-', ''), 10))
-    .filter((n) => !Number.isNaN(n))
-    .reduce((a, b) => Math.max(a, b), 0)
-  return `INC-${String(max + 1).padStart(4, '0')}`
-}
-
 // GET /api/incidents
 router.get('/', async (_req, res) => {
   try {
@@ -59,16 +50,12 @@ router.post('/', async (req, res) => {
   const { area, severity, assignedTeam = 'Unassigned', status = 'new', description } = req.body
 
   try {
-    const incident = await withTransaction(async (client) => {
-      const id = await nextIncidentId(client)
-      const { rows } = await client.query(
-        `INSERT INTO incidents (id, event_id, area, severity, assigned_team, status, description)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [id, DEFAULT_EVENT_ID, area, severity, assignedTeam, status, description]
-      )
-      return rows[0]
-    })
+    const incident = await createIncident(
+      { area, severity, assignedTeam, status, description },
+      DEFAULT_EVENT_ID
+    )
+    // FR-008: a reported incident automatically raises a security alert.
+    await notifyIncident(incident)
     res.status(201).json(toIncident(incident))
   } catch (err) {
     console.error('Failed to create incident:', err)

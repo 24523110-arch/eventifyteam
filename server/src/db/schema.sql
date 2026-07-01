@@ -64,6 +64,18 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- ---------------------------------------------------------------------
+-- Role options (lookup) — labels/descriptions for the 3 fixed roles,
+-- served to the login role selector and User Management forms so the
+-- frontend never hardcodes them.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS role_options (
+  value       user_role PRIMARY KEY,
+  label       TEXT NOT NULL,
+  description TEXT NOT NULL,
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+-- ---------------------------------------------------------------------
 -- Users (auth + User Management module)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS app_users (
@@ -95,6 +107,12 @@ CREATE TABLE IF NOT EXISTS vendors (
 );
 
 CREATE INDEX IF NOT EXISTS idx_vendors_event ON vendors(event_id);
+
+-- Vendor categories (lookup) — options for the Vendor Management form.
+CREATE TABLE IF NOT EXISTS vendor_categories (
+  name       TEXT PRIMARY KEY,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
 
 -- ---------------------------------------------------------------------
 -- Security teams (lookup) + Incidents (Incident Center — Security)

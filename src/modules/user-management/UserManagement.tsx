@@ -4,7 +4,7 @@ import { UserCog, UserPlus, Pencil, Ban, CheckCircle2, Trash2, Search } from 'lu
 import { useUserStore } from '@/store/userStore'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { ROLE_OPTIONS } from '@/data/userData'
+import { useReferenceStore } from '@/store/referenceStore'
 import { GlassCard } from '@/components/GlassCard'
 import { DataTable } from '@/components/DataTable'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -22,6 +22,7 @@ export function UserManagement() {
   const toggleUserStatus = useUserStore((s) => s.toggleUserStatus)
   const currentUser = useAuthStore((s) => s.user)
   const showToast = useToastStore((s) => s.show)
+  const roleOptions = useReferenceStore((s) => s.roles)
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<AppUser | null>(null)
@@ -109,7 +110,7 @@ export function UserManagement() {
             {
               key: 'role',
               header: 'Role',
-              render: (u) => <span className="text-ink-faint">{ROLE_OPTIONS.find((r) => r.value === u.role)?.label ?? u.role}</span>,
+              render: (u) => <span className="text-ink-faint">{roleOptions.find((r) => r.value === u.role)?.label ?? u.role}</span>,
             },
             { key: 'status', header: 'Status', render: (u) => <StatusBadge status={u.status} /> },
             { key: 'lastLogin', header: 'Last Login', render: (u) => <span className="text-ink-faint text-xs">{u.lastLogin}</span> },

@@ -10,6 +10,7 @@ Express + PostgreSQL backend for Eventify. Serves every domain module (auth, use
 - `GET /api/dashboard` — aggregate read (concert info, finance, tickets, crowd zones, trends) backing every role's dashboard.
 - `GET/PATCH/DELETE /api/notifications` — bell panel data and read/clear actions.
 - `POST /api/reports/evaluation` — generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set, else a deterministic local summary) and a PDF via `pdfkit`, and persists it to the `reports` table.
+- `GET /api/reference` — lookup data for the frontend forms (`roles`, `securityTeams`, `vendorCategories`), so no dropdown options are hardcoded client-side.
 
 ## Setup
 

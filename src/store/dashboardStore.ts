@@ -55,7 +55,8 @@ interface DashboardState {
   managerKpis: KpiCardData[]
   adminKpis: KpiCardData[]
   securityKpis: KpiCardData[]
-  fetchDashboard: () => Promise<void>
+  lastUpdated: number | null
+  fetchDashboard: (opts?: { silent?: boolean }) => Promise<void>
 }
 
 function buildKpis(
@@ -108,9 +109,11 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   managerKpis: [],
   adminKpis: [],
   securityKpis: [],
+  lastUpdated: null,
 
-  fetchDashboard: async () => {
-    set({ isLoading: true })
+  fetchDashboard: async (opts) => {
+    const silent = opts?.silent ?? false
+    if (!silent) set({ isLoading: true })
     try {
       const [dashboard, vendors, incidents] = await Promise.all([
         api.get<DashboardApiResponse>('/api/dashboard'),
@@ -118,11 +121,14 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         api.get<Incident[]>('/api/incidents'),
       ])
       const kpis = buildKpis(dashboard, vendors, incidents)
-      set({ ...dashboard, ...kpis, isLoading: false })
+      set({ ...dashboard, ...kpis, isLoading: false, lastUpdated: Date.now() })
     } catch (err) {
       set({ isLoading: false })
-      const message = err instanceof ApiError ? err.message : 'Gagal memuat data dashboard.'
-      useToastStore.getState().show(message, 'error')
+      // Stay quiet on background polls so a transient blip doesn't spam toasts.
+      if (!silent) {
+        const message = err instanceof ApiError ? err.message : 'Gagal memuat data dashboard.'
+        useToastStore.getState().show(message, 'error')
+      }
     }
   },
 }))

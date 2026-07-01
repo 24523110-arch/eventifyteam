@@ -7,7 +7,7 @@ interface IncidentState {
   incidents: Incident[]
   isLoading: boolean
   searchQuery: string
-  fetchIncidents: () => Promise<void>
+  fetchIncidents: (opts?: { silent?: boolean }) => Promise<void>
   setSearchQuery: (q: string) => void
   filteredIncidents: () => Incident[]
   createIncident: (input: Omit<Incident, 'id' | 'createdAt'>) => Promise<void>
@@ -27,14 +27,15 @@ export const useIncidentStore = create<IncidentState>((set, get) => ({
   isLoading: false,
   searchQuery: '',
 
-  fetchIncidents: async () => {
-    set({ isLoading: true })
+  fetchIncidents: async (opts) => {
+    const silent = opts?.silent ?? false
+    if (!silent) set({ isLoading: true })
     try {
       const incidents = await api.get<Incident[]>('/api/incidents')
       set({ incidents, isLoading: false })
     } catch (err) {
       set({ isLoading: false })
-      reportError(err, 'Gagal memuat daftar insiden.')
+      if (!silent) reportError(err, 'Gagal memuat daftar insiden.')
     }
   },
 

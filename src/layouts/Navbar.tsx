@@ -3,6 +3,7 @@ import { Bell, ChevronDown, Menu, CheckCheck, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 import { useNotificationStore } from '@/store/notificationStore'
+import { useDashboardStore } from '@/store/dashboardStore'
 import { StatusBadge } from '@/components/StatusBadge'
 
 function getGreeting(): string {
@@ -10,6 +11,34 @@ function getGreeting(): string {
   if (hour < 11) return 'Good Morning'
   if (hour < 15) return 'Good Afternoon'
   return 'Good Evening'
+}
+
+// Ticks every second so the "updated Xs ago" readout stays live between polls.
+function LiveUpdatedBadge() {
+  const lastUpdated = useDashboardStore((s) => s.lastUpdated)
+  const [, force] = useState(0)
+
+  useEffect(() => {
+    const id = window.setInterval(() => force((n) => n + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const label =
+    lastUpdated === null
+      ? 'Syncing…'
+      : (() => {
+          const secs = Math.max(0, Math.round((Date.now() - lastUpdated) / 1000))
+          if (secs < 60) return `Updated ${secs}s ago`
+          return `Updated ${Math.floor(secs / 60)}m ago`
+        })()
+
+  return (
+    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-danger/15 border border-status-danger/30 shrink-0">
+      <span className="live-dot" />
+      <span className="text-xs font-bold text-status-danger tracking-wide">LIVE</span>
+      <span className="text-[10px] text-ink-faint font-medium tabular-nums">{label}</span>
+    </div>
+  )
 }
 
 interface NavbarProps {
@@ -50,10 +79,7 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
         <h1 className="text-sm sm:text-base font-display font-semibold text-ink truncate">
           {getGreeting()}, <span className="text-gradient">{user.name.split(' ')[0]}</span>
         </h1>
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-danger/15 border border-status-danger/30 shrink-0">
-          <span className="live-dot" />
-          <span className="text-xs font-bold text-status-danger tracking-wide">LIVE</span>
-        </div>
+        <LiveUpdatedBadge />
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">

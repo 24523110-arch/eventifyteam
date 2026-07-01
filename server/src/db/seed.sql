@@ -12,6 +12,25 @@
 -- "changeme123" — change it before using them for real auth.
 -- =====================================================================
 
+-- ---------------------------------------------------------------------
+-- Reference / lookup data — applied idempotently on every migrate (even
+-- for an already-seeded database) so the frontend can read roles, teams,
+-- and vendor categories from the API instead of hardcoding them.
+-- ---------------------------------------------------------------------
+INSERT INTO role_options (value, label, description, sort_order) VALUES
+  ('manager',  'Manager',                 'Business evaluation, finance & reporting', 1),
+  ('admin',    'Admin / Event Organizer', 'Tickets, vendors & operations',            2),
+  ('security', 'Security Team',           'Crowd safety & incident response',         3)
+ON CONFLICT (value) DO NOTHING;
+
+INSERT INTO security_teams (name) VALUES
+  ('Security Alpha'), ('Security Bravo'), ('Security Charlie'), ('Security Delta'), ('Unassigned')
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO vendor_categories (name, sort_order) VALUES
+  ('F&B', 1), ('Technical', 2), ('Security', 3), ('Merchandise', 4), ('Facilities', 5)
+ON CONFLICT (name) DO NOTHING;
+
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM events WHERE id = 'evt-001') THEN
@@ -43,10 +62,7 @@ BEGIN
     ('v7', 'evt-001', 'CleanCity Sanitation',          'Facilities',   '06:30', 'active',      'Parking',            '081234567807'),
     ('v8', 'evt-001', 'Java Coffee Cart',               'F&B',          '11:00', 'not_arrived', 'Food Court',         '081234567808');
 
-  -- Security teams + incidents -------------------------------------------
-  INSERT INTO security_teams (name) VALUES
-    ('Security Alpha'), ('Security Bravo'), ('Security Charlie'), ('Security Delta'), ('Unassigned');
-
+  -- Incidents (security_teams seeded above in the reference section) -------
   INSERT INTO incidents (id, event_id, area, severity, assigned_team, status, description, created_at) VALUES
     ('INC-0042', 'evt-001', 'Gate B',      'high',     'Security Alpha',   'resolved',    'Overcrowding near barrier line 3',            '2026-06-19 19:48:00+07'),
     ('INC-0043', 'evt-001', 'Food Court',  'low',      'Security Bravo',   'closed',      'Minor altercation between vendors',           '2026-06-19 19:55:00+07'),
