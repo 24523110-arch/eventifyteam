@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ShieldAlert, Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react'
+import { ShieldAlert, Plus, Search, Eye, Pencil, Trash2, Timer, CheckCircle2, Target } from 'lucide-react'
 import { useIncidentStore } from '@/store/incidentStore'
+import { useDashboardStore } from '@/store/dashboardStore'
 import { useToastStore } from '@/store/toastStore'
 import { GlassCard } from '@/components/GlassCard'
 import { DataTable } from '@/components/DataTable'
@@ -19,6 +20,7 @@ export function IncidentCenter() {
   const updateIncident = useIncidentStore((s) => s.updateIncident)
   const deleteIncident = useIncidentStore((s) => s.deleteIncident)
   const allIncidents = useIncidentStore((s) => s.incidents)
+  const metrics = useDashboardStore((s) => s.incidentMetrics)
   const showToast = useToastStore((s) => s.show)
 
   const [formOpen, setFormOpen] = useState(false)
@@ -72,6 +74,43 @@ export function IncidentCenter() {
           </button>
         </div>
       </motion.div>
+
+      {/* Response-time metrics — real figures from status-transition timestamps */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          {
+            icon: Timer,
+            label: 'Avg Response Time',
+            value: metrics?.avgResponseMinutes != null ? `${metrics.avgResponseMinutes.toFixed(1)} min` : '—',
+            hint: `target ≤ ${metrics?.targetMinutes ?? 8} min`,
+            good: metrics?.avgResponseMinutes != null && metrics.avgResponseMinutes <= (metrics?.targetMinutes ?? 8),
+          },
+          {
+            icon: Target,
+            label: 'Within Target',
+            value: metrics?.underTargetPct != null ? `${metrics.underTargetPct}%` : '—',
+            hint: `${metrics?.acknowledgedCount ?? 0} acknowledged`,
+            good: (metrics?.underTargetPct ?? 0) >= 80,
+          },
+          {
+            icon: CheckCircle2,
+            label: 'Avg Resolution',
+            value: metrics?.avgResolutionMinutes != null ? `${metrics.avgResolutionMinutes.toFixed(1)} min` : '—',
+            hint: `${metrics?.resolvedCount ?? 0} resolved`,
+            good: true,
+          },
+        ].map((m) => (
+          <div key={m.label} className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${m.good ? 'bg-status-success/15 text-status-success' : 'bg-status-warning/15 text-status-warning'}`}>
+              <m.icon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-lg font-display font-bold text-ink leading-tight tabular-nums">{m.value}</div>
+              <div className="text-xs text-ink-faint truncate">{m.label} · {m.hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />

@@ -72,5 +72,3 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 }))
-
-useNotificationStore.getState().fetchNotifications()

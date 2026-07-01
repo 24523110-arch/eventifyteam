@@ -33,6 +33,8 @@ services:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/eventify
       DEFAULT_EVENT_ID: evt-001
+      # Secret untuk menandatangani JWT sesi login. WAJIB diganti di produksi.
+      JWT_SECRET: ${JWT_SECRET:-eventify-dev-secret-change-me}
       # Live data feed (simulasi ticketing + sensor crowd). Set 'false' untuk
       # mematikan; SIMULATOR_TICK_MS mengatur interval update (default 8000).
       SIMULATOR_ENABLED: ${SIMULATOR_ENABLED:-true}

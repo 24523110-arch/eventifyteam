@@ -99,5 +99,3 @@ export const useIncidentStore = create<IncidentState>((set, get) => ({
     }
   },
 }))
-
-useIncidentStore.getState().fetchIncidents()

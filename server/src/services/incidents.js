@@ -31,3 +31,21 @@ export async function createIncident(
     return rows[0]
   })
 }
+
+// Changes an incident's status and stamps the response-time milestones on first
+// transition: acknowledged_at when it first leaves "new", resolved_at when it
+// first reaches "resolved"/"closed". COALESCE keeps the earliest stamp so the
+// metric reflects real elapsed time. Returns the updated row (or undefined).
+export async function setIncidentStatus(id, status) {
+  const { rows } = await query(
+    `UPDATE incidents
+       SET status = $1::incident_status,
+           acknowledged_at = COALESCE(acknowledged_at, CASE WHEN $1::incident_status <> 'new' THEN now() END),
+           resolved_at     = COALESCE(resolved_at, CASE WHEN $1::incident_status IN ('resolved', 'closed') THEN now() END),
+           updated_at = now()
+     WHERE id = $2
+     RETURNING *`,
+    [status, id]
+  )
+  return rows[0]
+}

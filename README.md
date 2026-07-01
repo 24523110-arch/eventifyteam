@@ -10,7 +10,7 @@ Dark neon purple, glassmorphism concert MIS — revised down to 3 roles with ful
 | **Admin / Event Organizer** | Dashboard, Ticket Sales, Vendor Management, Reports (operational), Settings |
 | **Security Team** | Dashboard, Live Monitoring, Crowd Monitoring, Incident Center, Settings |
 
-Menus are hidden (not disabled) per role in the sidebar, and routes are guarded server-side-equivalent via `RoleRoute` — visiting another role's URL directly redirects to your own dashboard.
+Menus are hidden (not disabled) per role in the sidebar, and routes are guarded client-side via `RoleRoute` — visiting another role's URL directly redirects to your own dashboard. Access is **also enforced server-side**: login issues a JWT, every API request carries it as a Bearer token, and writes are restricted to the owning role (a security user cannot `POST /api/users`, etc.). The session persists across refreshes and is cleared on 401.
 
 Demo accounts (shown on the login screen):
 ```
@@ -108,5 +108,5 @@ See `server/src/db/schema.sql` for the full DDL. Summary:
 
 ## Known limitations
 
-- KPI card "delta" figures (e.g. `+12.4%`) have no historical baseline table yet, so they remain the same illustrative values the dummy data shipped with — the underlying totals they're attached to are live from the database.
+- Most KPI card "delta" figures (e.g. `+12.4%`) have no historical baseline table yet, so they remain the same illustrative values the dummy data shipped with — the underlying totals they're attached to are live from the database. Exception: the Security "Avg Response Time" KPI and the Incident Center metrics strip are now computed from real incident status-transition timestamps (`acknowledged_at` / `resolved_at`).
 - Dependencies could not be installed or the app build-verified against a live PostgreSQL instance in the sandbox this was authored in (no network egress, no root to install PostgreSQL). Every SQL file, JS file (`node --check`), and TypeScript file (`tsc --noEmit`, whole project, zero errors) has been syntax/type-checked; seed data column counts and enum values were cross-checked by hand against the schema. Please run `npm run db:migrate` and `npm run dev` (both `/` and `/server`) locally and report back if anything needs adjusting.

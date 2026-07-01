@@ -53,6 +53,19 @@ export interface Incident {
   status: IncidentStatus
   createdAt: string
   description: string
+  // Populated by the API on read: minutes from creation to first acknowledgement
+  // / to resolution. Null until the incident reaches that milestone.
+  responseMinutes?: number | null
+  resolutionMinutes?: number | null
+}
+
+export interface IncidentMetrics {
+  targetMinutes: number
+  acknowledgedCount: number
+  resolvedCount: number
+  avgResponseMinutes: number | null
+  avgResolutionMinutes: number | null
+  underTargetPct: number | null
 }
 
 export interface CrowdZone {

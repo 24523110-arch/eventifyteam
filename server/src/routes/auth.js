@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { query } from '../db/pool.js'
 import { formatIndoDateTime } from '../utils/format.js'
+import { sign } from '../auth/jwt.js'
 
 const router = Router()
 
@@ -51,7 +52,8 @@ router.post('/login', async (req, res) => {
       [account.id]
     )
 
-    res.json({ user: toAppUser(updated[0]) })
+    const token = sign({ sub: updated[0].id, role: updated[0].role })
+    res.json({ user: toAppUser(updated[0]), token })
   } catch (err) {
     console.error('Login failed:', err)
     res.status(500).json({ error: 'Gagal login. Silakan coba lagi.' })

@@ -136,6 +136,11 @@ CREATE TABLE IF NOT EXISTS incidents (
 CREATE INDEX IF NOT EXISTS idx_incidents_event ON incidents(event_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
 
+-- Response-time tracking: when an incident was first acknowledged (moved off
+-- "new") and when it was resolved/closed. Powers the "< 8 min response" metric.
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS acknowledged_at TIMESTAMPTZ;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
+
 -- ---------------------------------------------------------------------
 -- Crowd monitoring (Live/Crowd Monitoring — Security)
 -- ---------------------------------------------------------------------

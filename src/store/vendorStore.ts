@@ -88,5 +88,3 @@ export const useVendorStore = create<VendorState>((set, get) => ({
     }
   },
 }))
-
-useVendorStore.getState().fetchVendors()

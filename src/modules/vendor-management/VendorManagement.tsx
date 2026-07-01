@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Truck, CheckCircle2, Clock3, AlertCircle, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 import { useVendorStore } from '@/store/vendorStore'
@@ -32,6 +32,10 @@ export function VendorManagement() {
   const updateVendor = useVendorStore((s) => s.updateVendor)
   const deleteVendor = useVendorStore((s) => s.deleteVendor)
   const showToast = useToastStore((s) => s.show)
+
+  useEffect(() => {
+    useVendorStore.getState().fetchVendors()
+  }, [])
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Vendor | null>(null)

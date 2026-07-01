@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { UserCog, UserPlus, Pencil, Ban, CheckCircle2, Trash2, Search } from 'lucide-react'
 import { useUserStore } from '@/store/userStore'
@@ -23,6 +23,12 @@ export function UserManagement() {
   const currentUser = useAuthStore((s) => s.user)
   const showToast = useToastStore((s) => s.show)
   const roleOptions = useReferenceStore((s) => s.roles)
+
+  // Manager-only data — loaded when the page mounts (the endpoint is 403 for
+  // other roles, so it isn't fetched globally).
+  useEffect(() => {
+    useUserStore.getState().fetchUsers()
+  }, [])
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<AppUser | null>(null)

@@ -9,6 +9,7 @@ import type {
   KpiCardData,
   Vendor,
   Incident,
+  IncidentMetrics,
 } from '@/types'
 import { api, ApiError } from '@/services/api'
 import { useToastStore } from '@/store/toastStore'
@@ -55,6 +56,7 @@ interface DashboardState {
   managerKpis: KpiCardData[]
   adminKpis: KpiCardData[]
   securityKpis: KpiCardData[]
+  incidentMetrics: IncidentMetrics | null
   lastUpdated: number | null
   fetchDashboard: (opts?: { silent?: boolean }) => Promise<void>
 }
@@ -62,11 +64,20 @@ interface DashboardState {
 function buildKpis(
   data: DashboardApiResponse,
   vendors: Vendor[],
-  incidents: Incident[]
+  incidents: Incident[],
+  metrics: IncidentMetrics | null
 ): { managerKpis: KpiCardData[]; adminKpis: KpiCardData[]; securityKpis: KpiCardData[] } {
   const activeVendors = vendors.filter((v) => v.status === 'active').length
   const openIncidents = incidents.filter((i) => i.status !== 'closed' && i.status !== 'resolved').length
   const criticalZones = data.crowdZones.filter((z) => z.status === 'critical').length
+
+  // Real avg response time (minutes) from incident status-transition timestamps;
+  // trend is measured against the 8-minute PRD target.
+  const avgResponse = metrics?.avgResponseMinutes ?? null
+  const responseValue = avgResponse === null ? '—' : `${avgResponse.toFixed(1)} min`
+  const responseTrend = avgResponse === null ? 'flat' : avgResponse <= (metrics?.targetMinutes ?? 8) ? 'down' : 'up'
+  const responseDelta =
+    avgResponse === null ? 'no data' : `target ${metrics?.targetMinutes ?? 8} min`
 
   // Deltas/trends have no historical baseline table yet, so they stay as
   // the same illustrative figures the dummy data shipped with.
@@ -87,7 +98,7 @@ function buildKpis(
       { id: 'incidents', label: 'Open Incidents', value: String(openIncidents), delta: '-1', trend: 'down', icon: 'shield-alert' },
       { id: 'critical', label: 'Critical Zones', value: String(criticalZones), delta: '0', trend: 'flat', icon: 'flame' },
       { id: 'occupancy', label: 'Total Occupancy', value: '80.3%', delta: '+5.1%', trend: 'up', icon: 'gauge' },
-      { id: 'response', label: 'Avg Response Time', value: '6.4 min', delta: '-1.2 min', trend: 'down', icon: 'users' },
+      { id: 'response', label: 'Avg Response Time', value: responseValue, delta: responseDelta, trend: responseTrend, icon: 'users' },
     ],
   }
 }
@@ -109,19 +120,21 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   managerKpis: [],
   adminKpis: [],
   securityKpis: [],
+  incidentMetrics: null,
   lastUpdated: null,
 
   fetchDashboard: async (opts) => {
     const silent = opts?.silent ?? false
     if (!silent) set({ isLoading: true })
     try {
-      const [dashboard, vendors, incidents] = await Promise.all([
+      const [dashboard, vendors, incidents, incidentMetrics] = await Promise.all([
         api.get<DashboardApiResponse>('/api/dashboard'),
         api.get<Vendor[]>('/api/vendors'),
         api.get<Incident[]>('/api/incidents'),
+        api.get<IncidentMetrics>('/api/incidents/metrics'),
       ])
-      const kpis = buildKpis(dashboard, vendors, incidents)
-      set({ ...dashboard, ...kpis, isLoading: false, lastUpdated: Date.now() })
+      const kpis = buildKpis(dashboard, vendors, incidents, incidentMetrics)
+      set({ ...dashboard, ...kpis, incidentMetrics, isLoading: false, lastUpdated: Date.now() })
     } catch (err) {
       set({ isLoading: false })
       // Stay quiet on background polls so a transient blip doesn't spam toasts.
@@ -132,5 +145,3 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     }
   },
 }))
-
-useDashboardStore.getState().fetchDashboard()

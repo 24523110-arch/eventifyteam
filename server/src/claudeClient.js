@@ -1,7 +1,7 @@
 import { buildLocalInsight } from './insightGenerator.js'
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
-const CLAUDE_MODEL = 'claude-sonnet-4-6'
+const CLAUDE_MODEL = 'claude-opus-4-8'
 
 function buildPrompt(input) {
   const { ticketSummary, attendance, financeSummary, financeBreakdown, concertInfo } = input

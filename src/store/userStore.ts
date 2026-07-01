@@ -88,5 +88,3 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 }))
-
-useUserStore.getState().fetchUsers()

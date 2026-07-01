@@ -7,7 +7,7 @@
 // Toggle with SIMULATOR_ENABLED=false; pace with SIMULATOR_TICK_MS.
 
 import { query, DEFAULT_EVENT_ID } from './db/pool.js'
-import { createIncident } from './services/incidents.js'
+import { createIncident, setIncidentStatus } from './services/incidents.js'
 import { notifyIncident, createActivity } from './notify.js'
 
 const TICK_MS = Number(process.env.SIMULATOR_TICK_MS) || 8000
@@ -24,6 +24,7 @@ async function tick() {
     await simulateTicketSales()
     const zones = await simulateCrowdZones()
     await maybeRaiseCrowdIncident(zones)
+    await simulateIncidentProgress()
   } catch (err) {
     console.error('[simulator] tick failed:', err.message)
   }
@@ -155,6 +156,24 @@ async function maybeRaiseCrowdIncident(zones) {
   )
   await notifyIncident(incident)
   lastAutoIncidentAt = Date.now()
+}
+
+// Advances a random open incident one step toward resolution, so response and
+// resolution times accumulate for the metrics endpoint (a security team would
+// be acknowledging and clearing incidents throughout the event).
+const NEXT_STATUS = { new: 'assigned', assigned: 'in_progress', in_progress: 'resolved', escalated: 'resolved' }
+
+async function simulateIncidentProgress() {
+  if (Math.random() > 0.4) return
+  const { rows } = await query(
+    `SELECT id, status FROM incidents
+      WHERE event_id = $1 AND status NOT IN ('resolved', 'closed')
+      ORDER BY random() LIMIT 1`,
+    [DEFAULT_EVENT_ID]
+  )
+  const incident = rows[0]
+  const next = incident && NEXT_STATUS[incident.status]
+  if (next) await setIncidentStatus(incident.id, next)
 }
 
 export function startSimulator() {

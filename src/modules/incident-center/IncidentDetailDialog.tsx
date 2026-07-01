@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, ArrowUpCircle, CheckCircle2, XCircle } from 'lucide-react'
+import { MapPin, Clock, Users, ArrowUpCircle, CheckCircle2, XCircle, Timer } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -58,6 +58,18 @@ export function IncidentDetailDialog({ incident, onOpenChange }: IncidentDetailD
               <div className="text-ink font-medium">{incident.createdAt}</div>
             </div>
           </div>
+          {(incident.responseMinutes != null || incident.resolutionMinutes != null) && (
+            <div className="flex items-center gap-2.5 glass rounded-xl p-3">
+              <Timer className="w-4 h-4 text-primary shrink-0" />
+              <div>
+                <div className="text-xs text-ink-faint">Response / Resolution</div>
+                <div className="text-ink font-medium">
+                  {incident.responseMinutes != null ? `${incident.responseMinutes.toFixed(1)} min to respond` : 'Not yet responded'}
+                  {incident.resolutionMinutes != null && ` · ${incident.resolutionMinutes.toFixed(1)} min to resolve`}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

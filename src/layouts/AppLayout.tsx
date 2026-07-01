@@ -1,13 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
 import { Toaster } from '@/components/Toaster'
 import { useRealtimePolling } from '@/hooks/useRealtimePolling'
+import { useDashboardStore } from '@/store/dashboardStore'
+import { useNotificationStore } from '@/store/notificationStore'
+import { useIncidentStore } from '@/store/incidentStore'
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   useRealtimePolling()
+
+  // Initial load of the data every role's shell needs. Runs here (post-auth)
+  // rather than at store-module load, so requests carry the Bearer token and
+  // never fire on the unauthenticated login page.
+  useEffect(() => {
+    useDashboardStore.getState().fetchDashboard()
+    useNotificationStore.getState().fetchNotifications()
+    useIncidentStore.getState().fetchIncidents()
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-surface-void">

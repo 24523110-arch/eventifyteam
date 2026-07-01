@@ -4,9 +4,11 @@ Express + PostgreSQL backend for Eventify. Serves every domain module (auth, use
 
 ## What it does
 
-- `POST /api/auth/login` — validates credentials against `app_users` (bcrypt via PostgreSQL's `pgcrypto`).
+- `POST /api/auth/login` — validates credentials against `app_users` (bcrypt via PostgreSQL's `pgcrypto`) and returns `{ user, token }`, where `token` is an HS256 JWT (8h expiry, signed with `JWT_SECRET`).
+- **Auth**: every route below requires an `Authorization: Bearer <token>` header (401 otherwise). Reads (`GET`) are allowed for any signed-in user so each role's dashboard can aggregate cross-module data; writes are scoped to the owning role — `users` → manager, `vendors` → admin, `incidents` → security, `reports/evaluation` → manager (403 otherwise). Public routes: `POST /api/auth/login`, `GET /api/reference`, `GET /api/health`.
 - `GET/POST/PUT/DELETE /api/users`, `/api/vendors`, `/api/incidents` — CRUD for User Management, Vendor Management, and Incident Center.
-- `PATCH /api/incidents/:id/status`, `/api/incidents/:id/assign` — incident workflow actions.
+- `PATCH /api/incidents/:id/status`, `/api/incidents/:id/assign` — incident workflow actions. Status transitions stamp `acknowledged_at` (first move off `new`) and `resolved_at` for response-time metrics.
+- `GET /api/incidents/metrics` — response/resolution-time aggregates (avg response min, % within the 8-min target, avg resolution min).
 - `GET /api/dashboard` — aggregate read (concert info, finance, tickets, crowd zones, trends) backing every role's dashboard.
 - `GET/PATCH/DELETE /api/notifications` — bell panel data and read/clear actions.
 - `POST /api/reports/evaluation` — generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set, else a deterministic local summary) and a PDF via `pdfkit`, and persists it to the `reports` table.

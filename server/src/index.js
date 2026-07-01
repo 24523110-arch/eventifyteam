@@ -12,6 +12,7 @@ import reportRoutes from './routes/reports.js'
 import referenceRoutes from './routes/reference.js'
 import { pool } from './db/pool.js'
 import { startSimulator } from './simulator.js'
+import { requireAuth, requireRole, requireRoleForWrites } from './middleware/auth.js'
 
 dotenv.config()
 
@@ -30,14 +31,20 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
+// Public routes — login issues the token; reference data feeds the login
+// role selector before any token exists.
 app.use('/api/auth', authRoutes)
-app.use('/api/users', userRoutes)
-app.use('/api/vendors', vendorRoutes)
-app.use('/api/incidents', incidentRoutes)
-app.use('/api/dashboard', dashboardRoutes)
-app.use('/api/notifications', notificationRoutes)
-app.use('/api/reports', reportRoutes)
 app.use('/api/reference', referenceRoutes)
+
+// Authenticated routes. Reads (GET) are allowed for any signed-in user so
+// each role's dashboard can aggregate cross-module data; writes are scoped
+// to the role that owns the module.
+app.use('/api/users', requireAuth, requireRole('manager'), userRoutes)
+app.use('/api/vendors', requireAuth, requireRoleForWrites('admin'), vendorRoutes)
+app.use('/api/incidents', requireAuth, requireRoleForWrites('security'), incidentRoutes)
+app.use('/api/dashboard', requireAuth, dashboardRoutes)
+app.use('/api/notifications', requireAuth, notificationRoutes)
+app.use('/api/reports', requireAuth, requireRoleForWrites('manager'), reportRoutes)
 
 // Fallback error handler for anything that slips past route-level try/catch.
 app.use((err, _req, res, _next) => {

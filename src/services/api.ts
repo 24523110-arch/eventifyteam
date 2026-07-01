@@ -2,6 +2,7 @@
 // PostgreSQL backend instead of reading static src/data files directly.
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+const TOKEN_KEY = 'eventify_token'
 
 export class ApiError extends Error {
   status: number
@@ -11,6 +12,38 @@ export class ApiError extends Error {
   }
 }
 
+// Bearer token for authenticated requests. Held in memory (seeded from
+// localStorage) so the auth store and this client stay in sync without a
+// circular import.
+let authToken: string | null = (() => {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+})()
+let onUnauthorized: (() => void) | null = null
+
+export function setAuthToken(token: string | null) {
+  authToken = token
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* storage unavailable — keep the in-memory token */
+  }
+}
+
+export function getAuthToken() {
+  return authToken
+}
+
+// Called when the server rejects the token (401) — the auth store registers a
+// handler that logs the user out so the router redirects to /login.
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response
   try {
@@ -18,6 +51,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options,
       headers: {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...options.headers,
       },
     })
@@ -26,6 +60,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       `Tidak dapat terhubung ke server Eventify. Pastikan backend berjalan di ${API_BASE_URL}.`,
       0
     )
+  }
+
+  // Expired/invalid session — clear auth so the app returns to login.
+  if (response.status === 401) {
+    onUnauthorized?.()
   }
 
   if (response.status === 204) {
