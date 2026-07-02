@@ -40,3 +40,18 @@ export async function withTransaction(fn) {
 }
 
 export const DEFAULT_EVENT_ID = process.env.DEFAULT_EVENT_ID || 'evt-001'
+
+// Resolves which concert every operational module (dashboard, vendors,
+// incidents, notifications, field reports, simulator) should read/write.
+// Priority: whichever concert is Live > the most recently Ended one (so data
+// stays visible right after a concert wraps up) > the most recently touched
+// Scheduled one > the seeded default as a last resort on an empty table.
+export async function resolveActiveEventId() {
+  const { rows } = await pool.query(
+    `SELECT id FROM events
+     ORDER BY CASE status WHEN 'Live' THEN 0 WHEN 'Ended' THEN 1 ELSE 2 END,
+              updated_at DESC
+     LIMIT 1`
+  )
+  return rows[0]?.id ?? DEFAULT_EVENT_ID
+}

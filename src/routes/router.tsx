@@ -12,6 +12,7 @@ import { SecurityDashboard } from '@/dashboard/security/SecurityDashboard'
 
 import { TicketSales } from '@/modules/ticket-sales/TicketSales'
 import { VendorManagement } from '@/modules/vendor-management/VendorManagement'
+import { ConcertSchedule } from '@/modules/concert-schedule/ConcertSchedule'
 import { LiveMonitoring } from '@/modules/live-monitoring/LiveMonitoring'
 import { CrowdMonitoring } from '@/modules/crowd-monitoring/CrowdMonitoring'
 import { IncidentCenter } from '@/modules/incident-center/IncidentCenter'
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
 
               // Admin / Event Organizer
               { path: '/dashboard/admin', element: <AdminDashboard /> },
+              { path: '/concert-schedule', element: <ConcertSchedule /> },
               { path: '/ticket-sales', element: <TicketSales /> },
               { path: '/vendor-management', element: <VendorManagement /> },
 

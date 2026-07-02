@@ -4,9 +4,13 @@
 // dashboards actually move in real time, and raises an incident + alert when a
 // zone breaches its safe threshold (FR-005 / FR-015 / FR-016).
 //
+// The feed only runs against whichever concert the Event Organizer has
+// marked 'Live' (PATCH /api/events/:id/status) — if none is live, the tick
+// is a no-op and dashboards stay frozen on their last figures.
+//
 // Toggle with SIMULATOR_ENABLED=false; pace with SIMULATOR_TICK_MS.
 
-import { query, DEFAULT_EVENT_ID } from './db/pool.js'
+import { query } from './db/pool.js'
 import { createIncident, setIncidentStatus } from './services/incidents.js'
 import { notifyIncident, createActivity } from './notify.js'
 
@@ -19,12 +23,19 @@ const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 let lastAutoIncidentAt = 0
 let timer = null
 
+async function getLiveEventId() {
+  const { rows } = await query(`SELECT id FROM events WHERE status = 'Live' ORDER BY updated_at DESC LIMIT 1`)
+  return rows[0]?.id ?? null
+}
+
 async function tick() {
   try {
-    await simulateTicketSales()
-    const zones = await simulateCrowdZones()
-    await maybeRaiseCrowdIncident(zones)
-    await simulateIncidentProgress()
+    const eventId = await getLiveEventId()
+    if (!eventId) return
+    await simulateTicketSales(eventId)
+    const zones = await simulateCrowdZones(eventId)
+    await maybeRaiseCrowdIncident(zones, eventId)
+    await simulateIncidentProgress(eventId)
   } catch (err) {
     console.error('[simulator] tick failed:', err.message)
   }
@@ -32,9 +43,8 @@ async function tick() {
 
 // Ticket sales → grows sold/revenue, shrinks remaining, bumps attendance,
 // finance revenue/profit/margin, and the latest trend buckets.
-async function simulateTicketSales() {
+async function simulateTicketSales(eventId) {
   const sold = randInt(4, 35)
-  const revenueDelta = sold * AVG_TICKET_PRICE
 
   // LEAST(...) keeps us from overselling once remaining hits 0; every SET
   // expression reads the pre-update row, so `remaining` is the old value.
@@ -45,17 +55,17 @@ async function simulateTicketSales() {
            remaining = GREATEST(remaining - $2, 0)
      WHERE event_id = $1
      RETURNING LEAST($2, remaining) AS actual_sold`,
-    [DEFAULT_EVENT_ID, sold, AVG_TICKET_PRICE]
+    [eventId, sold, AVG_TICKET_PRICE]
   )
   const actualSold = rows[0] ? Number(rows[0].actual_sold) : 0
-  if (actualSold <= 0) return // sold out — nothing more to move
+  if (actualSold <= 0) return // sold out, or no ticket_summary row for this event — nothing more to move
 
   const actualRevenue = actualSold * AVG_TICKET_PRICE
 
   await Promise.all([
     query(
       `UPDATE events SET attendance = LEAST(attendance + $2, capacity) WHERE id = $1`,
-      [DEFAULT_EVENT_ID, randInt(2, Math.max(2, Math.round(actualSold * 0.8)))]
+      [eventId, randInt(2, Math.max(2, Math.round(actualSold * 0.8)))]
     ),
     query(
       `UPDATE finance_summary
@@ -63,7 +73,7 @@ async function simulateTicketSales() {
              profit  = (revenue + $2) - expenses,
              margin  = ROUND((revenue + $2 - expenses) / NULLIF(revenue + $2, 0) * 100, 2)
        WHERE event_id = $1`,
-      [DEFAULT_EVENT_ID, actualRevenue]
+      [eventId, actualRevenue]
     ),
     query(
       `UPDATE revenue_trend
@@ -71,21 +81,21 @@ async function simulateTicketSales() {
              revenue      = revenue + $3
        WHERE event_id = $1
          AND sort_order = (SELECT MAX(sort_order) FROM revenue_trend WHERE event_id = $1)`,
-      [DEFAULT_EVENT_ID, actualSold, actualRevenue / 1_000_000]
+      [eventId, actualSold, actualRevenue / 1_000_000]
     ),
     query(
       `UPDATE hourly_sales
          SET tickets = tickets + $2
        WHERE event_id = $1
          AND sort_order = (SELECT MAX(sort_order) FROM hourly_sales WHERE event_id = $1)`,
-      [DEFAULT_EVENT_ID, actualSold]
+      [eventId, actualSold]
     ),
   ])
 }
 
 // Random-walks each zone's occupancy and recomputes its status band. Returns
 // the updated zones so the caller can react to any that turned critical.
-async function simulateCrowdZones() {
+async function simulateCrowdZones(eventId) {
   const { rows } = await query(
     `WITH moved AS (
        SELECT id,
@@ -112,7 +122,7 @@ async function simulateCrowdZones() {
        FROM moved m
       WHERE z.id = m.id
       RETURNING z.id, z.name, z.current, z.capacity, z.status`,
-    [DEFAULT_EVENT_ID]
+    [eventId]
   )
 
   // Keep the density trend's latest point in step with overall occupancy.
@@ -125,7 +135,7 @@ async function simulateCrowdZones() {
          SET density = $2
        WHERE event_id = $1
          AND sort_order = (SELECT MAX(sort_order) FROM density_trend WHERE event_id = $1)`,
-      [DEFAULT_EVENT_ID, Math.max(0, Math.min(100, density))]
+      [eventId, Math.max(0, Math.min(100, density))]
     )
   }
   return rows
@@ -133,7 +143,7 @@ async function simulateCrowdZones() {
 
 // When a zone is critical, occasionally auto-file an incident (rate-limited so
 // the feed doesn't flood) and raise the matching security alert.
-async function maybeRaiseCrowdIncident(zones) {
+async function maybeRaiseCrowdIncident(zones, eventId) {
   const critical = zones.filter((z) => z.status === 'critical')
   if (critical.length === 0) return
   if (Date.now() - lastAutoIncidentAt < AUTO_INCIDENT_COOLDOWN_MS) return
@@ -152,7 +162,7 @@ async function maybeRaiseCrowdIncident(zones) {
         ratio * 100
       )}%).`,
     },
-    DEFAULT_EVENT_ID
+    eventId
   )
   await notifyIncident(incident)
   lastAutoIncidentAt = Date.now()
@@ -163,13 +173,13 @@ async function maybeRaiseCrowdIncident(zones) {
 // be acknowledging and clearing incidents throughout the event).
 const NEXT_STATUS = { new: 'assigned', assigned: 'in_progress', in_progress: 'resolved', escalated: 'resolved' }
 
-async function simulateIncidentProgress() {
+async function simulateIncidentProgress(eventId) {
   if (Math.random() > 0.4) return
   const { rows } = await query(
     `SELECT id, status FROM incidents
       WHERE event_id = $1 AND status NOT IN ('resolved', 'closed')
       ORDER BY random() LIMIT 1`,
-    [DEFAULT_EVENT_ID]
+    [eventId]
   )
   const incident = rows[0]
   const next = incident && NEXT_STATUS[incident.status]

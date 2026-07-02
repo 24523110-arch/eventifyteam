@@ -12,7 +12,7 @@ export function requireAuth(req, res, next) {
   if (!payload) {
     return res.status(401).json({ error: 'Sesi tidak valid atau telah berakhir. Silakan login kembali.' })
   }
-  req.user = { id: payload.sub, role: payload.role }
+  req.user = { id: payload.sub, role: payload.role, name: payload.name }
   next()
 }
 

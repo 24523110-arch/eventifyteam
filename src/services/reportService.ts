@@ -1,11 +1,14 @@
-import type { ReportGenerationInput, ReportGenerationResult } from '@/types'
+import type { ReportGenerationResult } from '@/types'
 import { getAuthToken } from '@/services/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
 
 export class ReportServiceError extends Error {}
 
-export async function generateEvaluationReport(input: ReportGenerationInput): Promise<ReportGenerationResult> {
+// The server assembles all report data itself (ticket/finance, the EO's
+// field reports, Security's incident record) for the active concert — this
+// call just triggers generation.
+export async function generateEvaluationReport(): Promise<ReportGenerationResult> {
   let response: Response
   const token = getAuthToken()
   try {
@@ -15,7 +18,6 @@ export async function generateEvaluationReport(input: ReportGenerationInput): Pr
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(input),
     })
   } catch {
     throw new ReportServiceError(

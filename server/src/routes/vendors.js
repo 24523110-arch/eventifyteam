@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { query, DEFAULT_EVENT_ID } from '../db/pool.js'
+import { query, resolveActiveEventId } from '../db/pool.js'
 
 const router = Router()
 const VALID_STATUSES = ['not_arrived', 'check_in', 'setup', 'ready', 'active', 'completed']
@@ -25,12 +25,13 @@ function validateInput(body) {
   return null
 }
 
-// GET /api/vendors
+// GET /api/vendors — scoped to the active concert
 router.get('/', async (_req, res) => {
   try {
+    const eventId = await resolveActiveEventId()
     const { rows } = await query(
       `SELECT * FROM vendors WHERE event_id = $1 ORDER BY created_at ASC`,
-      [DEFAULT_EVENT_ID]
+      [eventId]
     )
     res.json(rows.map(toVendor))
   } catch (err) {
@@ -48,11 +49,12 @@ router.post('/', async (req, res) => {
   const id = `v-${Date.now()}`
 
   try {
+    const eventId = await resolveActiveEventId()
     const { rows } = await query(
       `INSERT INTO vendors (id, event_id, name, category, arrival_time, status, assigned_area, contact)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [id, DEFAULT_EVENT_ID, name, category, arrivalTime, status, assignedArea, contact]
+      [id, eventId, name, category, arrivalTime, status, assignedArea, contact]
     )
     res.status(201).json(toVendor(rows[0]))
   } catch (err) {

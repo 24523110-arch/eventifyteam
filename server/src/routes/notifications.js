@@ -1,7 +1,20 @@
 import { Router } from 'express'
-import { query, DEFAULT_EVENT_ID } from '../db/pool.js'
+import { query, resolveActiveEventId } from '../db/pool.js'
 
 const router = Router()
+
+// Which notification categories each role sees when a notification isn't
+// explicitly targeted (target_role IS NULL). Role-specific bell feeds.
+const ROLE_CATEGORIES = {
+  manager: ['finance', 'ticket', 'system'],
+  admin: ['vendor', 'ticket', 'system'],
+  security: ['security', 'system'],
+}
+
+// Shared WHERE fragment: a notification is visible to a role when it is
+// explicitly targeted to that role, or untargeted and in the role's categories.
+const VISIBLE_TO_ROLE = `(target_role = $2 OR (target_role IS NULL AND category = ANY($3)))`
+const roleParams = (role) => [role, ROLE_CATEGORIES[role] ?? ['system']]
 
 function toNotification(row) {
   return {
@@ -25,16 +38,18 @@ function toActivityItem(row) {
 }
 
 // GET /api/notifications -> { notifications, activityFeed }
-router.get('/', async (_req, res) => {
+// Bell feed is scoped to the caller's role; the activity feed stays shared.
+router.get('/', async (req, res) => {
   try {
+    const eventId = await resolveActiveEventId()
     const [notifications, activity] = await Promise.all([
       query(
-        `SELECT * FROM notifications WHERE event_id = $1 ORDER BY created_at DESC`,
-        [DEFAULT_EVENT_ID]
+        `SELECT * FROM notifications WHERE event_id = $1 AND ${VISIBLE_TO_ROLE} ORDER BY created_at DESC`,
+        [eventId, ...roleParams(req.user.role)]
       ),
       query(
         `SELECT * FROM activity_feed WHERE event_id = $1 ORDER BY created_at DESC`,
-        [DEFAULT_EVENT_ID]
+        [eventId]
       ),
     ])
     res.json({
@@ -62,10 +77,14 @@ router.patch('/:id/read', async (req, res) => {
   }
 })
 
-// PATCH /api/notifications/read-all
-router.patch('/read-all', async (_req, res) => {
+// PATCH /api/notifications/read-all — only the caller's own role feed
+router.patch('/read-all', async (req, res) => {
   try {
-    await query(`UPDATE notifications SET is_read = TRUE WHERE event_id = $1`, [DEFAULT_EVENT_ID])
+    const eventId = await resolveActiveEventId()
+    await query(
+      `UPDATE notifications SET is_read = TRUE WHERE event_id = $1 AND ${VISIBLE_TO_ROLE}`,
+      [eventId, ...roleParams(req.user.role)]
+    )
     res.status(204).end()
   } catch (err) {
     console.error('Failed to mark all notifications read:', err)
@@ -73,10 +92,14 @@ router.patch('/read-all', async (_req, res) => {
   }
 })
 
-// DELETE /api/notifications  (clear all)
-router.delete('/', async (_req, res) => {
+// DELETE /api/notifications  (clear all in the caller's role feed)
+router.delete('/', async (req, res) => {
   try {
-    await query(`DELETE FROM notifications WHERE event_id = $1`, [DEFAULT_EVENT_ID])
+    const eventId = await resolveActiveEventId()
+    await query(
+      `DELETE FROM notifications WHERE event_id = $1 AND ${VISIBLE_TO_ROLE}`,
+      [eventId, ...roleParams(req.user.role)]
+    )
     res.status(204).end()
   } catch (err) {
     console.error('Failed to clear notifications:', err)

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { query, DEFAULT_EVENT_ID } from '../db/pool.js'
+import { query, resolveActiveEventId } from '../db/pool.js'
 
 const router = Router()
 
@@ -8,8 +8,10 @@ const num = (v) => (v === null || v === undefined ? 0 : Number(v))
 // GET /api/dashboard
 // Single aggregate endpoint backing dashboardStore — one round trip for
 // every role's dashboard (Manager finance, Admin ticketing, Security crowd).
+// Always reflects whichever concert is active per resolveActiveEventId().
 router.get('/', async (_req, res) => {
   try {
+    const eventId = await resolveActiveEventId()
     const [
       eventRes,
       revenueTrendRes,
@@ -22,21 +24,21 @@ router.get('/', async (_req, res) => {
       crowdZonesRes,
       densityTrendRes,
     ] = await Promise.all([
-      query('SELECT * FROM events WHERE id = $1', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM revenue_trend WHERE event_id = $1 ORDER BY sort_order', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM finance_summary WHERE event_id = $1', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM finance_breakdown WHERE event_id = $1 ORDER BY id', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM ticket_summary WHERE event_id = $1', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM hourly_sales WHERE event_id = $1 ORDER BY sort_order', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM daily_revenue WHERE event_id = $1 ORDER BY sort_order', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM checkin_conversion WHERE event_id = $1 ORDER BY sort_order', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM crowd_zones WHERE event_id = $1 ORDER BY id', [DEFAULT_EVENT_ID]),
-      query('SELECT * FROM density_trend WHERE event_id = $1 ORDER BY sort_order', [DEFAULT_EVENT_ID]),
+      query('SELECT * FROM events WHERE id = $1', [eventId]),
+      query('SELECT * FROM revenue_trend WHERE event_id = $1 ORDER BY sort_order', [eventId]),
+      query('SELECT * FROM finance_summary WHERE event_id = $1', [eventId]),
+      query('SELECT * FROM finance_breakdown WHERE event_id = $1 ORDER BY id', [eventId]),
+      query('SELECT * FROM ticket_summary WHERE event_id = $1', [eventId]),
+      query('SELECT * FROM hourly_sales WHERE event_id = $1 ORDER BY sort_order', [eventId]),
+      query('SELECT * FROM daily_revenue WHERE event_id = $1 ORDER BY sort_order', [eventId]),
+      query('SELECT * FROM checkin_conversion WHERE event_id = $1 ORDER BY sort_order', [eventId]),
+      query('SELECT * FROM crowd_zones WHERE event_id = $1 ORDER BY id', [eventId]),
+      query('SELECT * FROM density_trend WHERE event_id = $1 ORDER BY sort_order', [eventId]),
     ])
 
     const event = eventRes.rows[0]
     if (!event) {
-      return res.status(404).json({ error: `Event "${DEFAULT_EVENT_ID}" tidak ditemukan. Jalankan npm run db:migrate.` })
+      return res.status(404).json({ error: `Event "${eventId}" tidak ditemukan. Jalankan npm run db:migrate.` })
     }
     const financeSummary = financeSummaryRes.rows[0]
     const ticketSummary = ticketSummaryRes.rows[0]

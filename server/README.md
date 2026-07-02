@@ -5,13 +5,16 @@ Express + PostgreSQL backend for Eventify. Serves every domain module (auth, use
 ## What it does
 
 - `POST /api/auth/login` — validates credentials against `app_users` (bcrypt via PostgreSQL's `pgcrypto`) and returns `{ user, token }`, where `token` is an HS256 JWT (8h expiry, signed with `JWT_SECRET`).
-- **Auth**: every route below requires an `Authorization: Bearer <token>` header (401 otherwise). Reads (`GET`) are allowed for any signed-in user so each role's dashboard can aggregate cross-module data; writes are scoped to the owning role — `users` → manager, `vendors` → admin, `incidents` → security, `reports/evaluation` → manager (403 otherwise). Public routes: `POST /api/auth/login`, `GET /api/reference`, `GET /api/health`.
-- `GET/POST/PUT/DELETE /api/users`, `/api/vendors`, `/api/incidents` — CRUD for User Management, Vendor Management, and Incident Center.
+- **Auth**: every route below requires an `Authorization: Bearer <token>` header (401 otherwise). Reads (`GET`) are allowed for any signed-in user so each role's dashboard can aggregate cross-module data; writes are scoped to the owning role — `users` → manager, `vendors` → admin, `incidents` → security, `reports/evaluation` → manager, `events` (reads too) → admin, `field-reports` (reads: manager+admin, writes: admin) (403 otherwise). Public routes: `POST /api/auth/login`, `GET /api/reference`, `GET /api/health`.
+- **Active concert**: almost every route below operates on whichever concert `resolveActiveEventId()` (`src/db/pool.js`) resolves to — the one that's `Live`, else the most recently `Ended`, else the newest `Scheduled`. Switching which concert is Live (via the Concert Schedule) instantly redirects every dashboard, vendor list, incident list, notification feed, field-report feed, and the live simulator to that concert's own data.
+- `GET/POST/PUT/DELETE /api/users`, `/api/vendors`, `/api/incidents` — CRUD for User Management, Vendor Management, and Incident Center (scoped to the active concert).
 - `PATCH /api/incidents/:id/status`, `/api/incidents/:id/assign` — incident workflow actions. Status transitions stamp `acknowledged_at` (first move off `new`) and `resolved_at` for response-time metrics.
-- `GET /api/incidents/metrics` — response/resolution-time aggregates (avg response min, % within the 8-min target, avg resolution min).
-- `GET /api/dashboard` — aggregate read (concert info, finance, tickets, crowd zones, trends) backing every role's dashboard.
-- `GET/PATCH/DELETE /api/notifications` — bell panel data and read/clear actions.
-- `POST /api/reports/evaluation` — generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set, else a deterministic local summary) and a PDF via `pdfkit`, and persists it to the `reports` table.
+- `GET /api/incidents/metrics` — response/resolution-time aggregates (avg response min, % within the 8-min target, avg resolution min, counts by severity). Reused server-side by report generation.
+- **`GET/POST/PUT/DELETE /api/events`, `PATCH /api/events/:id/status`** (admin only, including reads) — the Concert Schedule: many concerts tracked as `Scheduled`/`Live`/`Ended`. `POST` provisions a zeroed operational scaffold (finance, ticketing, crowd zones, trend buckets) for the new concert. `PATCH .../status` to `Live` auto-ends any other Live concert (only one runs at a time) and starts the simulator moving its data; `DELETE` is blocked while a concert is `Live`.
+- `GET /api/field-reports` (manager + admin) / `POST /api/field-reports` (admin only) — manual on-site reports from the Event Organizer, scoped to `['Operasional', 'Vendor', 'Tiket', 'Umum']` (security topics stay in Incident Center). Flow into the Manager's Reports view, raise a manager-targeted notification, and feed the AI evaluation report.
+- Bell notifications are **role-scoped**: `GET/PATCH/DELETE /api/notifications` filters by the caller's role (`target_role`, or the category→role mapping) — Security sees security alerts, Admin sees vendor/ticket, Manager sees finance/report/system; untargeted `system` notifications (e.g. concert status changes) reach every role.
+- `GET /api/dashboard` — aggregate read (concert info, finance, tickets, crowd zones, trends) backing every role's dashboard, scoped to the active concert.
+- `POST /api/reports/evaluation` — bodyless; the server assembles ticket/finance data + the EO's field reports + the Security Team's incident summary for the active concert, generates a narrative insight covering all three (Claude API if `ANTHROPIC_API_KEY` is set, else a deterministic local summary with the same structure), builds a PDF via `pdfkit` with a section per source, and persists it to the `reports` table.
 - `GET /api/reference` — lookup data for the frontend forms (`roles`, `securityTeams`, `vendorCategories`), so no dropdown options are hardcoded client-side.
 
 ## Setup
@@ -30,7 +33,7 @@ Server runs on `http://localhost:4000` by default. The frontend's stores expect 
 ## Database
 
 - `src/db/schema.sql` — full DDL (enums, tables, indexes, foreign keys). Idempotent, uses `IF NOT EXISTS`.
-- `src/db/seed.sql` — seeds the same data the app used to ship as dummy data (one event, 6 users, 8 vendors, 5 incidents, 6 crowd zones, notifications, finance/ticketing figures). Idempotent — skips if `evt-001` already exists.
+- `src/db/seed.sql` — seeds the demo concert (`evt-001`, 6 users, 8 vendors, 5 incidents, 6 crowd zones, notifications, finance/ticketing figures). Idempotent — skips if `evt-001` already exists. Additional concerts created afterward via `POST /api/events` get the same scaffold shape (zeroed) via `src/services/events.js`.
 - `src/db/pool.js` — `pg` connection pool, reads `DATABASE_URL`.
 - `src/db/migrate.js` — runs schema then seed. Re-run any time; both files are safe to apply twice.
 

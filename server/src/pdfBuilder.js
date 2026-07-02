@@ -18,7 +18,7 @@ export function buildReportPdf(input, insight, generatedAt) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    const { ticketSummary, attendance, financeSummary, financeBreakdown, concertInfo } = input
+    const { ticketSummary, attendance, financeSummary, financeBreakdown, concertInfo, fieldReports = [], incidentSummary, recentIncidents = [] } = input
     const purple = '#7C3AED'
     const dark = '#1B1630'
     const gray = '#6B7280'
@@ -71,6 +71,43 @@ export function buildReportPdf(input, insight, generatedAt) {
       doc.fontSize(10).fillColor(dark).font('Helvetica').text(category, 50, doc.y, { continued: true, width: 250 })
       doc.font('Helvetica-Bold').text(formatIDR(amount), { align: 'right' })
     })
+    doc.moveDown(1)
+
+    // Section: Field reports from the Event Organizer
+    doc.fillColor(purple).fontSize(13).font('Helvetica-Bold').text('Laporan Operasional Lapangan (Event Organizer)')
+    doc.moveDown(0.4)
+    if (fieldReports.length === 0) {
+      doc.fontSize(10).fillColor(gray).font('Helvetica').text('Tidak ada laporan lapangan yang tercatat.')
+    } else {
+      fieldReports.forEach((r) => {
+        doc.fontSize(10).fillColor(dark).font('Helvetica-Bold').text(`[${r.category}] ${r.title}`)
+        doc.fontSize(9).fillColor(gray).font('Helvetica').text(`oleh ${r.author}`)
+        doc.fontSize(10).fillColor(dark).font('Helvetica').text(r.content, { align: 'justify' })
+        doc.moveDown(0.5)
+      })
+    }
+    doc.moveDown(0.6)
+
+    // Section: Security summary from the Security Team
+    doc.fillColor(purple).fontSize(13).font('Helvetica-Bold').text('Ringkasan Keamanan (Security Team)')
+    doc.moveDown(0.4)
+    const securityRows = [
+      ['Total Insiden', String(incidentSummary?.totalCount ?? 0)],
+      ['Kritis / Tinggi', `${incidentSummary?.bySeverity?.critical ?? 0} / ${incidentSummary?.bySeverity?.high ?? 0}`],
+      ['Terselesaikan', String(incidentSummary?.resolvedCount ?? 0)],
+      ['Rata-rata Waktu Respons', incidentSummary?.avgResponseMinutes != null ? `${incidentSummary.avgResponseMinutes} menit` : '—'],
+    ]
+    securityRows.forEach(([label, value]) => {
+      doc.fontSize(10).fillColor(dark).font('Helvetica').text(label, 50, doc.y, { continued: true, width: 250 })
+      doc.font('Helvetica-Bold').text(value, { align: 'right' })
+    })
+    if (recentIncidents.length > 0) {
+      doc.moveDown(0.4)
+      doc.fontSize(9).fillColor(gray).font('Helvetica').text('Insiden terbaru:')
+      recentIncidents.slice(0, 5).forEach((i) => {
+        doc.fontSize(9).fillColor(dark).font('Helvetica').text(`• [${i.severity}/${i.status}] ${i.area} — ${i.description || '(tanpa deskripsi)'}`)
+      })
+    }
     doc.moveDown(1)
 
     // Section: Insight

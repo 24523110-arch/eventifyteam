@@ -10,6 +10,8 @@ import dashboardRoutes from './routes/dashboard.js'
 import notificationRoutes from './routes/notifications.js'
 import reportRoutes from './routes/reports.js'
 import referenceRoutes from './routes/reference.js'
+import eventsRoutes from './routes/events.js'
+import fieldReportRoutes from './routes/fieldReports.js'
 import { pool } from './db/pool.js'
 import { startSimulator } from './simulator.js'
 import { requireAuth, requireRole, requireRoleForWrites } from './middleware/auth.js'
@@ -45,6 +47,19 @@ app.use('/api/incidents', requireAuth, requireRoleForWrites('security'), inciden
 app.use('/api/dashboard', requireAuth, dashboardRoutes)
 app.use('/api/notifications', requireAuth, notificationRoutes)
 app.use('/api/reports', requireAuth, requireRoleForWrites('manager'), reportRoutes)
+
+// Concert schedule: Event Organizer manages ongoing/upcoming/history entries
+// and flips a concert Live/Ended. Admin-only, including reads.
+app.use('/api/events', requireAuth, requireRole('admin'), eventsRoutes)
+
+// Field reports: read by Manager + Admin, submitted by Admin (EO) only.
+app.use(
+  '/api/field-reports',
+  requireAuth,
+  (req, res, next) =>
+    req.method === 'GET' ? requireRole('manager', 'admin')(req, res, next) : requireRole('admin')(req, res, next),
+  fieldReportRoutes
+)
 
 // Fallback error handler for anything that slips past route-level try/catch.
 app.use((err, _req, res, _next) => {

@@ -14,14 +14,35 @@ function getGreeting(): string {
 }
 
 // Ticks every second so the "updated Xs ago" readout stays live between polls.
+// LIVE only shows while the concert is ongoing (status flips via the Event
+// Organizer's Concert Schedule); otherwise a static badge reflects whether
+// the concert hasn't started yet or has already ended.
 function LiveUpdatedBadge() {
   const lastUpdated = useDashboardStore((s) => s.lastUpdated)
+  const status = useDashboardStore((s) => s.concertInfo.status)
   const [, force] = useState(0)
 
   useEffect(() => {
     const id = window.setInterval(() => force((n) => n + 1), 1000)
     return () => window.clearInterval(id)
   }, [])
+
+  if (status === 'Scheduled') {
+    return (
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 shrink-0">
+        <span className="w-1.5 h-1.5 rounded-full bg-ink-faint" />
+        <span className="text-xs font-bold text-ink-faint tracking-wide">BELUM DIMULAI</span>
+      </div>
+    )
+  }
+  if (status === 'Ended') {
+    return (
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 shrink-0">
+        <span className="w-1.5 h-1.5 rounded-full bg-ink-faint" />
+        <span className="text-xs font-bold text-ink-faint tracking-wide">CONCERT ENDED</span>
+      </div>
+    )
+  }
 
   const label =
     lastUpdated === null

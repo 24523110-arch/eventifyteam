@@ -24,13 +24,14 @@ export async function createNotification({
   priority,
   title,
   message,
+  targetRole = null,
   eventId = DEFAULT_EVENT_ID,
 }) {
   const { rows } = await query(
-    `INSERT INTO notifications (id, event_id, category, priority, title, message, time_label)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO notifications (id, event_id, category, priority, title, message, time_label, target_role)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [genId('ntf'), eventId, category, priority, title, message, formatClockTime()]
+    [genId('ntf'), eventId, category, priority, title, message, formatClockTime(), targetRole]
   )
   return rows[0]
 }
@@ -53,6 +54,7 @@ export async function notifyIncident(incident) {
       eventId: incident.event_id,
       category: 'security',
       priority,
+      targetRole: 'security',
       title: `Insiden ${incident.severity} — ${incident.area}`,
       message: incident.description?.trim()
         ? incident.description
@@ -65,5 +67,42 @@ export async function notifyIncident(incident) {
     })
   } catch (err) {
     console.error('Failed to emit incident notification:', err)
+  }
+}
+
+// The Event Organizer flips a concert Live/Ended — announce it to everyone
+// (system category, untargeted) so every role's bell reflects it.
+export async function notifyEventStatus(event) {
+  const message =
+    event.status === 'Live'
+      ? `Monitoring LIVE aktif untuk ${event.name}.`
+      : `${event.name} telah selesai — monitoring dihentikan.`
+  try {
+    await createNotification({ category: 'system', priority: 'medium', title: 'Status Konser', message, eventId: event.id })
+    await createActivity({ category: 'system', message, eventId: event.id })
+  } catch (err) {
+    console.error('Failed to emit event-status notification:', err)
+  }
+}
+
+// Field report submitted by the Event Organizer → alerts the Manager, whose
+// Reports view is where these land (EO → Manager reporting pipeline).
+export async function notifyFieldReport(report) {
+  try {
+    await createNotification({
+      eventId: report.event_id,
+      category: 'system',
+      priority: 'medium',
+      targetRole: 'manager',
+      title: `Laporan lapangan: ${report.title}`,
+      message: `${report.author_name} mengirim laporan ${report.category} dari lokasi.`,
+    })
+    await createActivity({
+      eventId: report.event_id,
+      category: 'system',
+      message: `${report.author_name} mengirim laporan lapangan "${report.title}".`,
+    })
+  } catch (err) {
+    console.error('Failed to emit field-report notification:', err)
   }
 }

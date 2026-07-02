@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
       [account.id]
     )
 
-    const token = sign({ sub: updated[0].id, role: updated[0].role })
+    const token = sign({ sub: updated[0].id, role: updated[0].role, name: updated[0].name })
     res.json({ user: toAppUser(updated[0]), token })
   } catch (err) {
     console.error('Login failed:', err)

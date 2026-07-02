@@ -6,9 +6,15 @@ Dark neon purple, glassmorphism concert MIS — revised down to 3 roles with ful
 
 | Role | Pages |
 |---|---|
-| **Manager** | Dashboard, Finance, Reports (AI PDF report), User Management, Settings |
-| **Admin / Event Organizer** | Dashboard, Ticket Sales, Vendor Management, Reports (operational), Settings |
+| **Manager** | Dashboard, Finance, Reports (AI evaluation report **+ incoming field reports from the EO**), User Management, Settings |
+| **Admin / Event Organizer** | Dashboard, **Concert Schedule** (multi-event CRUD + Mulai Live/Akhiri Konser), Ticket Sales, Vendor Management, Reports (operational **+ submit field reports**), Settings |
 | **Security Team** | Dashboard, Live Monitoring, Crowd Monitoring, Incident Center, Settings |
+
+**Reporting flow (EO → Manager → AI):** the Admin/Event Organizer monitors the concert on-site and files manual **field reports** (Operasional / Vendor / Tiket / Umum — security topics are excluded, that's the Security Team's own Incident Center). Field reports land in the Manager's Reports view in real time and ping the Manager's bell. When the Manager clicks **Generate Evaluation Report**, the backend assembles ticket/finance data + all field reports from the EO + the Security Team's incident record (counts by severity, resolution status, avg response time) for the active concert, and hands all of it to Claude for one detailed narrative evaluation — the PDF includes dedicated sections for each source.
+
+**Concert schedule:** the Admin/Event Organizer manages many concerts — Scheduled (belum berlangsung), Live (sedang berlangsung), or Ended (riwayat, editable/deletable). Only one concert is Live at a time; starting a new one automatically ends whichever was previously Live. Every operational module (dashboards, vendors, incidents, notifications, field reports, the live simulator) automatically follows whichever concert is Live — real-time monitoring runs while `Live` and freezes the moment it's marked `Ended`.
+
+**Notifications are role-specific**: Security sees incident/security alerts, Admin sees vendor/ticket updates, Manager sees finance/report/system — plus untargeted `system` announcements (like concert status changes) reach everyone.
 
 Menus are hidden (not disabled) per role in the sidebar, and routes are guarded client-side via `RoleRoute` — visiting another role's URL directly redirects to your own dashboard. Access is **also enforced server-side**: login issues a JWT, every API request carries it as a Bearer token, and writes are restricted to the owning role (a security user cannot `POST /api/users`, etc.). The session persists across refreshes and is cleared on 401.
 
@@ -27,7 +33,8 @@ security@eventify.io / security123
   - Vendor Management (Admin) — create, edit, delete, search, status filter
   - Incident Center (Security) — create, edit, delete, search, status actions (Escalate/Resolve/Close) in a detail dialog
 - **Notifications**: bell panel opens, mark-as-read, mark-all-as-read, clear all — all persisted.
-- **AI Concert Evaluation Report (Manager → Reports)**: pulls ticket/attendance/finance data from the store, calls the backend, which generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary), builds a PDF via `pdfkit`, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
+- **AI Concert Evaluation Report (Manager → Reports)**: one click triggers the backend, which assembles ticket/finance data, the EO's field reports, and the Security Team's incident summary for the active concert, generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary covering the same three aspects), builds a PDF via `pdfkit` with a section per source, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
+- **Concert Schedule (Admin → Concert Schedule)**: full CRUD over many concerts (create, edit, delete history), plus Mulai Live/Akhiri Konser actions. Creating a schedule provisions a zeroed operational scaffold (finance, ticketing, crowd zones, trend buckets) so the dashboard and live simulator have real data the moment it goes Live.
 - **Responsive**: sidebar becomes a slide-in drawer on mobile/tablet (`<lg`), all grids collapse to single/double column.
 - **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `referenceStore`, `settingsStore`, `toastStore`. Every store hydrates from the Express API on load and pushes CRUD actions back to it — there are no static data files left in the frontend. Even the form dropdown options (role list, security teams, vendor categories) come from the database via `GET /api/reference`.
 
@@ -96,7 +103,8 @@ server/
 
 See `server/src/db/schema.sql` for the full DDL. Summary:
 
-- `events` — one row per concert (seeded with the Coldplay demo event)
+- `events` — one row per concert (many rows now — Scheduled/Live/Ended); `resolveActiveEventId()` in `server/src/db/pool.js` picks which one every operational route reads/writes (Live, else the most recently Ended, else the newest Scheduled)
+- `field_reports` — manual on-site reports from the Admin/EO, folded into the AI evaluation report
 - `app_users` — auth + User Management
 - `vendors` — Vendor Management
 - `security_teams`, `incidents` — Incident Center

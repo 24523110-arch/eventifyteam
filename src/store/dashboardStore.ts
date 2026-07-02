@@ -105,6 +105,8 @@ function buildKpis(
 
 // Single source of truth for all dashboard data across roles, now backed
 // by the /api/dashboard endpoint (PostgreSQL) instead of static dummy data.
+// The concert schedule itself (create/edit/delete/Live toggle) lives in
+// eventStore — this store just reflects whichever concert is active.
 export const useDashboardStore = create<DashboardState>((set) => ({
   isLoading: false,
   concertInfo: EMPTY_CONCERT_INFO,

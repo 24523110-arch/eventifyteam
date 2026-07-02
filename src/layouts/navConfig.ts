@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Wallet, FileText, UserCog, Settings,
-  Ticket, Truck, Radio, Flame, ShieldAlert,
+  Ticket, Truck, Radio, Flame, ShieldAlert, CalendarClock,
 } from 'lucide-react'
 import type { UserRole } from '@/types'
 
@@ -21,6 +21,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   ],
   admin: [
     { to: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/concert-schedule', label: 'Concert Schedule', icon: CalendarClock },
     { to: '/ticket-sales', label: 'Ticket Sales', icon: Ticket },
     { to: '/vendor-management', label: 'Vendor Management', icon: Truck },
     { to: '/reports', label: 'Reports', icon: FileText },

@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { query, DEFAULT_EVENT_ID } from '../db/pool.js'
+import { query, resolveActiveEventId } from '../db/pool.js'
 import { formatClockTime } from '../utils/format.js'
-import { createIncident, setIncidentStatus } from '../services/incidents.js'
+import { createIncident, setIncidentStatus, getIncidentMetrics } from '../services/incidents.js'
 import { notifyIncident } from '../notify.js'
 
 const router = Router()
@@ -35,12 +35,13 @@ function validateInput(body) {
   return null
 }
 
-// GET /api/incidents
+// GET /api/incidents — scoped to the active concert
 router.get('/', async (_req, res) => {
   try {
+    const eventId = await resolveActiveEventId()
     const { rows } = await query(
       `SELECT * FROM incidents WHERE event_id = $1 ORDER BY created_at DESC`,
-      [DEFAULT_EVENT_ID]
+      [eventId]
     )
     res.json(rows.map(toIncident))
   } catch (err) {
@@ -54,33 +55,8 @@ router.get('/', async (_req, res) => {
 // param routes so it isn't shadowed.
 router.get('/metrics', async (_req, res) => {
   try {
-    const { rows } = await query(
-      `SELECT
-         count(*) FILTER (WHERE acknowledged_at IS NOT NULL) AS acknowledged_count,
-         count(*) FILTER (WHERE resolved_at IS NOT NULL)     AS resolved_count,
-         avg(EXTRACT(EPOCH FROM (acknowledged_at - created_at)) / 60)
-           FILTER (WHERE acknowledged_at IS NOT NULL)        AS avg_response_min,
-         avg(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 60)
-           FILTER (WHERE resolved_at IS NOT NULL)            AS avg_resolution_min,
-         count(*) FILTER (
-           WHERE acknowledged_at IS NOT NULL
-             AND EXTRACT(EPOCH FROM (acknowledged_at - created_at)) / 60 <= 8
-         ) AS under_target_count
-       FROM incidents
-       WHERE event_id = $1`,
-      [DEFAULT_EVENT_ID]
-    )
-    const r = rows[0]
-    const acknowledged = Number(r.acknowledged_count)
-    const round1 = (v) => (v === null ? null : Math.round(Number(v) * 10) / 10)
-    res.json({
-      targetMinutes: 8,
-      acknowledgedCount: acknowledged,
-      resolvedCount: Number(r.resolved_count),
-      avgResponseMinutes: round1(r.avg_response_min),
-      avgResolutionMinutes: round1(r.avg_resolution_min),
-      underTargetPct: acknowledged > 0 ? Math.round((Number(r.under_target_count) / acknowledged) * 100) : null,
-    })
+    const eventId = await resolveActiveEventId()
+    res.json(await getIncidentMetrics(eventId))
   } catch (err) {
     console.error('Failed to load incident metrics:', err)
     res.status(500).json({ error: 'Gagal memuat metrik insiden.' })
@@ -95,10 +71,8 @@ router.post('/', async (req, res) => {
   const { area, severity, assignedTeam = 'Unassigned', status = 'new', description } = req.body
 
   try {
-    const incident = await createIncident(
-      { area, severity, assignedTeam, status, description },
-      DEFAULT_EVENT_ID
-    )
+    const eventId = await resolveActiveEventId()
+    const incident = await createIncident({ area, severity, assignedTeam, status, description }, eventId)
     // FR-008: a reported incident automatically raises a security alert.
     await notifyIncident(incident)
     res.status(201).json(toIncident(incident))
