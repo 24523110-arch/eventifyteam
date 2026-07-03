@@ -10,14 +10,12 @@ import { FinanceDashboard } from '@/dashboard/manager/FinanceDashboard'
 import { AdminDashboard } from '@/dashboard/admin/AdminDashboard'
 import { SecurityDashboard } from '@/dashboard/security/SecurityDashboard'
 
-import { TicketSales } from '@/modules/ticket-sales/TicketSales'
 import { VendorManagement } from '@/modules/vendor-management/VendorManagement'
 import { ConcertSchedule } from '@/modules/concert-schedule/ConcertSchedule'
 import { LiveMonitoring } from '@/modules/live-monitoring/LiveMonitoring'
 import { CrowdMonitoring } from '@/modules/crowd-monitoring/CrowdMonitoring'
 import { IncidentCenter } from '@/modules/incident-center/IncidentCenter'
 import { UserManagement } from '@/modules/user-management/UserManagement'
-import { SettingsPage } from '@/pages/settings/SettingsPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -39,7 +37,6 @@ export const router = createBrowserRouter([
               // Admin / Event Organizer
               { path: '/dashboard/admin', element: <AdminDashboard /> },
               { path: '/concert-schedule', element: <ConcertSchedule /> },
-              { path: '/ticket-sales', element: <TicketSales /> },
               { path: '/vendor-management', element: <VendorManagement /> },
 
               // Security
@@ -53,8 +50,6 @@ export const router = createBrowserRouter([
               // It's guarded here like everything else since /reports is
               // present in both manager's and admin's NAV_BY_ROLE entries.
               { path: '/reports', element: <ReportsRouter /> },
-
-              { path: '/settings', element: <SettingsPage /> },
             ],
           },
         ],

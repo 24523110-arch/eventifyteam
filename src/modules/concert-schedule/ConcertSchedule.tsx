@@ -107,7 +107,7 @@ export function ConcertSchedule() {
               'px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border',
               statusFilter === f.value
                 ? 'bg-primary/15 border-primary/40 text-primary'
-                : 'bg-white/[0.04] border-white/10 text-ink-faint hover:text-ink'
+                : 'bg-glass/[0.04] border-glass/10 text-ink-faint hover:text-ink'
             )}
           >
             {f.label}
@@ -153,7 +153,7 @@ export function ConcertSchedule() {
                     <button
                       onClick={() => handleStartLive(s)}
                       title="Mulai Live"
-                      className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-success transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-success transition-colors"
                     >
                       <PlayCircle className="w-3.5 h-3.5" />
                     </button>
@@ -162,15 +162,15 @@ export function ConcertSchedule() {
                     <button
                       onClick={() => handleEndConcert(s)}
                       title="Akhiri Konser"
-                      className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors"
                     >
                       <Power className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button onClick={() => handleEdit(s)} title="Edit" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-ink transition-colors">
+                  <button onClick={() => handleEdit(s)} title="Edit" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-ink transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setDeleteTarget(s)} title="Hapus" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors">
+                  <button onClick={() => setDeleteTarget(s)} title="Hapus" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

@@ -170,10 +170,10 @@ export function VendorManagement() {
               header: 'Actions',
               render: (v) => (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleEdit(v)} title="Edit" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-ink transition-colors">
+                  <button onClick={() => handleEdit(v)} title="Edit" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-ink transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setDeleteTarget(v)} title="Delete" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors">
+                  <button onClick={() => setDeleteTarget(v)} title="Delete" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

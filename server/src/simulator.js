@@ -1,12 +1,18 @@
-// Live data simulator — stands in for the real ticketing platform and crowd
-// sensors the PRD assumes are integrated. On every tick it nudges ticket
-// sales, attendance, finance and crowd density in the database so the polled
-// dashboards actually move in real time, and raises an incident + alert when a
-// zone breaches its safe threshold (FR-005 / FR-015 / FR-016).
+// Live data simulator — stands in for the real crowd sensors the PRD assumes
+// are integrated. On every tick it random-walks crowd density in the
+// database so Live/Crowd Monitoring actually moves in real time, and raises
+// an incident + alert when a zone breaches its safe threshold (FR-005 /
+// FR-015 / FR-016).
+//
+// Ticket sales, finance totals, and audience attendance are NOT simulated —
+// those are manual report entries (Admin/EO for finance & tickets via
+// PUT /api/finance and /api/ticket-sales, Security for attendance via
+// PUT /api/attendance), matching how a real MIS is fed from human-reported
+// figures rather than a random walk.
 //
 // The feed only runs against whichever concert the Event Organizer has
 // marked 'Live' (PATCH /api/events/:id/status) — if none is live, the tick
-// is a no-op and dashboards stay frozen on their last figures.
+// is a no-op.
 //
 // Toggle with SIMULATOR_ENABLED=false; pace with SIMULATOR_TICK_MS.
 
@@ -15,7 +21,6 @@ import { createIncident, setIncidentStatus } from './services/incidents.js'
 import { notifyIncident, createActivity } from './notify.js'
 
 const TICK_MS = Number(process.env.SIMULATOR_TICK_MS) || 8000
-const AVG_TICKET_PRICE = 750_000 // Rp — used to grow revenue with ticket sales
 const AUTO_INCIDENT_COOLDOWN_MS = 45_000
 
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
@@ -32,65 +37,12 @@ async function tick() {
   try {
     const eventId = await getLiveEventId()
     if (!eventId) return
-    await simulateTicketSales(eventId)
     const zones = await simulateCrowdZones(eventId)
     await maybeRaiseCrowdIncident(zones, eventId)
     await simulateIncidentProgress(eventId)
   } catch (err) {
     console.error('[simulator] tick failed:', err.message)
   }
-}
-
-// Ticket sales → grows sold/revenue, shrinks remaining, bumps attendance,
-// finance revenue/profit/margin, and the latest trend buckets.
-async function simulateTicketSales(eventId) {
-  const sold = randInt(4, 35)
-
-  // LEAST(...) keeps us from overselling once remaining hits 0; every SET
-  // expression reads the pre-update row, so `remaining` is the old value.
-  const { rows } = await query(
-    `UPDATE ticket_summary
-       SET sold      = sold + LEAST($2, remaining),
-           revenue   = revenue + LEAST($2, remaining) * $3,
-           remaining = GREATEST(remaining - $2, 0)
-     WHERE event_id = $1
-     RETURNING LEAST($2, remaining) AS actual_sold`,
-    [eventId, sold, AVG_TICKET_PRICE]
-  )
-  const actualSold = rows[0] ? Number(rows[0].actual_sold) : 0
-  if (actualSold <= 0) return // sold out, or no ticket_summary row for this event — nothing more to move
-
-  const actualRevenue = actualSold * AVG_TICKET_PRICE
-
-  await Promise.all([
-    query(
-      `UPDATE events SET attendance = LEAST(attendance + $2, capacity) WHERE id = $1`,
-      [eventId, randInt(2, Math.max(2, Math.round(actualSold * 0.8)))]
-    ),
-    query(
-      `UPDATE finance_summary
-         SET revenue = revenue + $2,
-             profit  = (revenue + $2) - expenses,
-             margin  = ROUND((revenue + $2 - expenses) / NULLIF(revenue + $2, 0) * 100, 2)
-       WHERE event_id = $1`,
-      [eventId, actualRevenue]
-    ),
-    query(
-      `UPDATE revenue_trend
-         SET tickets_sold = tickets_sold + $2,
-             revenue      = revenue + $3
-       WHERE event_id = $1
-         AND sort_order = (SELECT MAX(sort_order) FROM revenue_trend WHERE event_id = $1)`,
-      [eventId, actualSold, actualRevenue / 1_000_000]
-    ),
-    query(
-      `UPDATE hourly_sales
-         SET tickets = tickets + $2
-       WHERE event_id = $1
-         AND sort_order = (SELECT MAX(sort_order) FROM hourly_sales WHERE event_id = $1)`,
-      [eventId, actualSold]
-    ),
-  ])
 }
 
 // Random-walks each zone's occupancy and recomputes its status band. Returns

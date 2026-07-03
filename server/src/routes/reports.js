@@ -7,26 +7,21 @@ import { getIncidentMetrics } from '../services/incidents.js'
 const router = Router()
 const num = (v) => (v === null || v === undefined ? 0 : Number(v))
 
-function toFieldReport(row) {
-  return { author: row.author_name, category: row.category, title: row.title, content: row.content }
-}
-
 function toIncidentSummary(row) {
   return { id: row.id, area: row.area, severity: row.severity, status: row.status, description: row.description }
 }
 
-// Gathers everything the evaluation report draws on: ticket/finance data
-// (Manager's own numbers), the Event Organizer's field reports, and the
-// Security Team's incident record — one source of truth, assembled
-// server-side so the Manager doesn't need to hand-collect it.
+// Gathers everything the evaluation report draws on: the Admin/Event
+// Organizer's manual ticket + finance report and the Security Team's
+// incident record — one source of truth, assembled server-side so the
+// Manager doesn't need to hand-collect it.
 async function assembleReportInput(eventId) {
-  const [eventRes, financeSummaryRes, financeBreakdownRes, ticketSummaryRes, fieldReportsRes, incidentsRes, incidentMetrics] =
+  const [eventRes, financeSummaryRes, financeBreakdownRes, ticketSummaryRes, incidentsRes, incidentMetrics] =
     await Promise.all([
       query('SELECT * FROM events WHERE id = $1', [eventId]),
       query('SELECT * FROM finance_summary WHERE event_id = $1', [eventId]),
       query('SELECT * FROM finance_breakdown WHERE event_id = $1 ORDER BY id', [eventId]),
       query('SELECT * FROM ticket_summary WHERE event_id = $1', [eventId]),
-      query('SELECT * FROM field_reports WHERE event_id = $1 ORDER BY created_at DESC LIMIT 20', [eventId]),
       query('SELECT * FROM incidents WHERE event_id = $1 ORDER BY created_at DESC LIMIT 15', [eventId]),
       getIncidentMetrics(eventId),
     ])
@@ -53,17 +48,16 @@ async function assembleReportInput(eventId) {
     ticketSummary: ticketSummary
       ? { sold: ticketSummary.sold, revenue: num(ticketSummary.revenue), refunds: ticketSummary.refunds, remaining: ticketSummary.remaining }
       : { sold: 0, revenue: 0, refunds: 0, remaining: 0 },
-    fieldReports: fieldReportsRes.rows.map(toFieldReport),
     incidentSummary: incidentMetrics,
     recentIncidents: incidentsRes.rows.map(toIncidentSummary),
   }
 }
 
 // POST /api/reports/evaluation
-// Manager triggers generation; all data (finance/tickets + the Event
-// Organizer's field reports + the Security Team's incident record) is
-// gathered server-side for the active concert and handed to Claude for a
-// single detailed evaluation narrative.
+// Manager triggers generation; all data (the Admin/EO's ticket + finance
+// report and the Security Team's incident record) is gathered server-side
+// for the active concert and handed to Claude for one detailed evaluation
+// narrative.
 router.post('/evaluation', async (_req, res) => {
   try {
     const eventId = await resolveActiveEventId()

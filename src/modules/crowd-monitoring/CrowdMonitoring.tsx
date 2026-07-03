@@ -1,5 +1,6 @@
+import { useEffect, useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Gauge, BarChart2 } from 'lucide-react'
+import { Users, Gauge, BarChart2, Send } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useDashboardStore } from '@/store/dashboardStore'
 import { GlassCard } from '@/components/GlassCard'
@@ -9,10 +10,27 @@ import { percentage, formatNumber } from '@/utils'
 const tooltipStyle = { background: '#141124', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 12, fontSize: 12 }
 
 export function CrowdMonitoring() {
-  const { crowdZones, densityTrend } = useDashboardStore()
+  const { crowdZones, densityTrend, concertInfo, updateAttendance } = useDashboardStore()
 
   const totalCapacity = crowdZones.reduce((sum, z) => sum + z.capacity, 0)
   const totalCurrent = crowdZones.reduce((sum, z) => sum + z.current, 0)
+
+  const [attendanceInput, setAttendanceInput] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Sync to the stored figure — only re-fires when it actually changes, so
+  // it never clobbers a draft the user is mid-typing.
+  useEffect(() => {
+    setAttendanceInput(String(concertInfo.attendance))
+  }, [concertInfo.attendance])
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (attendanceInput === '') return
+    setSaving(true)
+    await updateAttendance(Number(attendanceInput))
+    setSaving(false)
+  }
 
   const kpis = [
     { label: 'Current Crowd', value: formatNumber(totalCurrent), icon: Users },
@@ -42,6 +60,35 @@ export function CrowdMonitoring() {
           </GlassCard>
         ))}
       </div>
+
+      {/* Manual attendance entry — Security Team's own headcount from the
+          gates, replacing the old simulator-driven attendance figure. */}
+      <GlassCard delay={0.15} hover={false}>
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+            <Users className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-display font-semibold text-ink">Input Kehadiran Penonton</h2>
+            <p className="text-xs text-ink-faint mt-0.5">
+              Masukkan jumlah penonton yang telah masuk venue (kapasitas: {formatNumber(concertInfo.capacity)}).
+            </p>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+          <div className="w-full sm:w-64">
+            <label className="text-xs font-medium text-ink-muted mb-1.5 block">Jumlah Kehadiran</label>
+            <input type="number" min="0" value={attendanceInput} onChange={(e) => setAttendanceInput(e.target.value)} className="input-glass" />
+          </div>
+          <button
+            type="submit"
+            disabled={saving || attendanceInput === ''}
+            className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-60 shrink-0"
+          >
+            <Send className="w-4 h-4" /> {saving ? 'Menyimpan…' : 'Simpan Kehadiran'}
+          </button>
+        </form>
+      </GlassCard>
 
       <GlassCard delay={0.2} hover={false}>
         <h2 className="font-display font-semibold text-ink mb-5">Density Trend</h2>

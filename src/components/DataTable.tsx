@@ -21,7 +21,7 @@ export function DataTable<T>({ columns, data, rowKey, delay = 0 }: DataTableProp
     <div className="overflow-x-auto scrollbar-thin -mx-1">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/[0.08]">
+          <tr className="border-b border-glass/[0.08]">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -39,7 +39,7 @@ export function DataTable<T>({ columns, data, rowKey, delay = 0 }: DataTableProp
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: delay + i * 0.03 }}
-              className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors"
+              className="border-b border-glass/[0.04] hover:bg-glass/[0.03] transition-colors"
             >
               {columns.map((col) => (
                 <td key={col.key} className={cn('px-3 py-3 text-ink whitespace-nowrap', col.className)}>

@@ -16,17 +16,23 @@ export default {
           fuchsia: '#D946EF',
           pink: '#EC4899',
         },
+        // Theme-reactive: values come from CSS custom properties (RGB triplets)
+        // defined in :root (dark, default) and overridden by .light in
+        // src/app/index.css, so a single class toggle re-themes the whole app.
         surface: {
-          void: '#0A0715',
-          base: '#100D1F',
-          raised: '#141124',
-          overlay: '#1B1630',
+          void: 'rgb(var(--surface-void) / <alpha-value>)',
+          base: 'rgb(var(--surface-base) / <alpha-value>)',
+          raised: 'rgb(var(--surface-raised) / <alpha-value>)',
+          overlay: 'rgb(var(--surface-overlay) / <alpha-value>)',
         },
         ink: {
-          DEFAULT: '#FFFFFF',
-          muted: '#C4B5FD',
-          faint: '#8B85A8',
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          muted: 'rgb(var(--ink-muted) / <alpha-value>)',
+          faint: 'rgb(var(--ink-faint) / <alpha-value>)',
         },
+        // Replaces literal `white` for translucent glass panels/borders so
+        // they invert correctly (light tint on dark bg, dark tint on light bg).
+        glass: 'rgb(var(--glass-rgb) / <alpha-value>)',
         status: {
           success: '#22C55E',
           warning: '#F59E0B',

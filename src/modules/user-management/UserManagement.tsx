@@ -125,13 +125,13 @@ export function UserManagement() {
               header: 'Actions',
               render: (u) => (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleEdit(u)} title="Edit" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-primary transition-colors">
+                  <button onClick={() => handleEdit(u)} title="Edit" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-primary transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleToggleStatus(u)}
                     title={u.status === 'active' ? 'Disable' : 'Enable'}
-                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-warning transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-warning transition-colors"
                   >
                     {u.status === 'active' ? <Ban className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   </button>
@@ -139,7 +139,7 @@ export function UserManagement() {
                     onClick={() => setDeleteTarget(u)}
                     disabled={u.id === currentUser?.id}
                     title={u.id === currentUser?.id ? "You can't delete your own account" : 'Delete'}
-                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-faint"
+                    className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-faint"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

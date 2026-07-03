@@ -287,21 +287,3 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reports_event ON reports(event_id, created_at DESC);
-
--- ---------------------------------------------------------------------
--- Field reports — manual on-site reports submitted by the Admin/Event
--- Organizer while the concert runs; they flow straight into the Manager's
--- Reports view. Origin of the reporting pipeline (EO → Manager).
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS field_reports (
-  id          TEXT PRIMARY KEY,
-  event_id    TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  author_id   TEXT REFERENCES app_users(id) ON DELETE SET NULL,
-  author_name TEXT NOT NULL,
-  category    TEXT NOT NULL,
-  title       TEXT NOT NULL,
-  content     TEXT NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_field_reports_event ON field_reports(event_id, created_at DESC);

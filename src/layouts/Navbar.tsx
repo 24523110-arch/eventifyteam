@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, ChevronDown, Menu, CheckCheck, Trash2 } from 'lucide-react'
+import { Bell, ChevronDown, Menu, CheckCheck, Trash2, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 import { useNotificationStore } from '@/store/notificationStore'
 import { useDashboardStore } from '@/store/dashboardStore'
+import { useThemeStore } from '@/store/themeStore'
 import { StatusBadge } from '@/components/StatusBadge'
 
 function getGreeting(): string {
@@ -29,7 +30,7 @@ function LiveUpdatedBadge() {
 
   if (status === 'Scheduled') {
     return (
-      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 shrink-0">
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-glass/[0.06] border border-glass/10 shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-ink-faint" />
         <span className="text-xs font-bold text-ink-faint tracking-wide">BELUM DIMULAI</span>
       </div>
@@ -37,7 +38,7 @@ function LiveUpdatedBadge() {
   }
   if (status === 'Ended') {
     return (
-      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 shrink-0">
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-glass/[0.06] border border-glass/10 shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-ink-faint" />
         <span className="text-xs font-bold text-ink-faint tracking-wide">CONCERT ENDED</span>
       </div>
@@ -59,6 +60,23 @@ function LiveUpdatedBadge() {
       <span className="text-xs font-bold text-status-danger tracking-wide">LIVE</span>
       <span className="text-[10px] text-ink-faint font-medium tabular-nums">{label}</span>
     </div>
+  )
+}
+
+// One-click dark/light theme toggle — single button, next to notifications.
+function ThemeToggle() {
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
+  const isLight = theme === 'light'
+
+  return (
+    <button
+      onClick={toggleTheme}
+      title={isLight ? 'Switch to dark theme' : 'Switch to light theme'}
+      className="p-2 rounded-xl glass hover:border-primary/30 transition-colors"
+    >
+      {isLight ? <Moon className="w-4 h-4 text-ink-muted" /> : <Sun className="w-4 h-4 text-ink-muted" />}
+    </button>
   )
 }
 
@@ -89,11 +107,11 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
   if (!user) return null
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-white/[0.06] px-4 sm:px-6 py-3.5 flex items-center justify-between">
+    <header className="sticky top-0 z-30 glass border-b border-glass/[0.06] px-4 sm:px-6 py-3.5 flex items-center justify-between">
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onMobileMenuOpen}
-          className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-white/[0.06] text-ink-muted shrink-0"
+          className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-glass/[0.06] text-ink-muted shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -104,6 +122,8 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <ThemeToggle />
+
         <div className="relative" ref={panelRef}>
           <button
             onClick={() => setNotifOpen((o) => !o)}
@@ -135,14 +155,14 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
                       <button
                         onClick={markAllAsRead}
                         title="Mark all as read"
-                        className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-primary transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-primary transition-colors"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={clearAll}
                         title="Clear all"
-                        className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -157,7 +177,7 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
                     <button
                       key={n.id}
                       onClick={() => markAsRead(n.id)}
-                      className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-white/[0.05] transition-colors relative"
+                      className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-glass/[0.05] transition-colors relative"
                     >
                       {!n.read && <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />}
                       <div className="flex items-start justify-between gap-2 pl-2">

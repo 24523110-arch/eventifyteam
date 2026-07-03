@@ -173,7 +173,7 @@ export function LoginFormSection() {
                         setRoleOpen(false)
                       }}
                       className={cn(
-                        'w-full flex items-start gap-2 text-left px-3 py-2.5 rounded-lg hover:bg-white/[0.06] transition-colors',
+                        'w-full flex items-start gap-2 text-left px-3 py-2.5 rounded-lg hover:bg-glass/[0.06] transition-colors',
                         role === opt.value && 'bg-primary/10'
                       )}
                     >

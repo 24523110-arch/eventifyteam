@@ -4,43 +4,35 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
 const CLAUDE_MODEL = 'claude-opus-4-8'
 
 function buildPrompt(input) {
-  const { ticketSummary, attendance, financeSummary, financeBreakdown, concertInfo, fieldReports = [], incidentSummary, recentIncidents = [] } = input
-
-  const fieldReportsBlock = fieldReports.length
-    ? fieldReports.map((r) => `  - [${r.category}] ${r.title} (oleh ${r.author}): ${r.content}`).join('\n')
-    : '  - (Tidak ada laporan lapangan dari Event Organizer.)'
+  const { ticketSummary, attendance, financeSummary, financeBreakdown, concertInfo, incidentSummary, recentIncidents = [] } = input
 
   const incidentsBlock = recentIncidents.length
     ? recentIncidents.map((i) => `  - [${i.severity}/${i.status}] ${i.area}: ${i.description || '(tanpa deskripsi)'}`).join('\n')
     : '  - (Tidak ada insiden tercatat.)'
 
-  return `Anda adalah analis bisnis untuk perusahaan event organizer konser. Buat rangkuman laporan evaluasi konser secara RINCI dalam Bahasa Indonesia, dalam bentuk 2-3 paragraf naratif (220-320 kata total), profesional, berbasis data, tanpa bullet point. Laporan ini MENCAKUP TIGA aspek: (1) performa tiket/kehadiran/keuangan, (2) kondisi operasional di lokasi berdasarkan laporan Event Organizer, dan (3) ringkasan keamanan berdasarkan data Security Team.
+  return `Anda adalah analis bisnis untuk perusahaan event organizer konser. Buat rangkuman laporan evaluasi konser secara RINCI dalam Bahasa Indonesia, dalam bentuk 2 paragraf naratif (180-260 kata total), profesional, berbasis data, tanpa bullet point. Laporan ini MENCAKUP DUA aspek: (1) laporan tiket & keuangan dari Event Organizer, dan (2) ringkasan keamanan dari Security Team.
 
-1) Data tiket, kehadiran & keuangan:
+1) Laporan tiket & keuangan dari Event Organizer:
 - Nama: ${concertInfo.name}
 - Venue: ${concertInfo.venue}
 - Kapasitas venue: ${concertInfo.capacity.toLocaleString('id-ID')}
 - Kehadiran: ${attendance.toLocaleString('id-ID')}
 - Tiket terjual: ${ticketSummary.sold.toLocaleString('id-ID')}
 - Tiket tersisa: ${ticketSummary.remaining.toLocaleString('id-ID')}
-- Refund: ${ticketSummary.refunds}
 - Total pendapatan: Rp ${(financeSummary.revenue / 1_000_000_000).toFixed(1)} miliar
 - Total pengeluaran: Rp ${(financeSummary.expenses / 1_000_000_000).toFixed(1)} miliar
 - Profit: Rp ${(financeSummary.profit / 1_000_000_000).toFixed(1)} miliar
 - Margin keuntungan: ${financeSummary.margin}%
 - Rincian pengeluaran terbesar: ${financeBreakdown.sort((a, b) => b.amount - a.amount)[0]?.category ?? '(belum ada data)'}
 
-2) Laporan lapangan dari Event Organizer (kondisi operasional on-site):
-${fieldReportsBlock}
-
-3) Ringkasan keamanan dari Security Team:
+2) Ringkasan keamanan dari Security Team:
 - Total insiden: ${incidentSummary?.totalCount ?? 0} (kritis: ${incidentSummary?.bySeverity?.critical ?? 0}, tinggi: ${incidentSummary?.bySeverity?.high ?? 0}, sedang: ${incidentSummary?.bySeverity?.medium ?? 0}, rendah: ${incidentSummary?.bySeverity?.low ?? 0})
 - Insiden terselesaikan: ${incidentSummary?.resolvedCount ?? 0}
 - Rata-rata waktu respons: ${incidentSummary?.avgResponseMinutes ?? 'belum ada data'} menit (target ≤ ${incidentSummary?.targetMinutes ?? 8} menit)
 - Insiden terbaru:
 ${incidentsBlock}
 
-Fokus pada insight yang actionable untuk manajemen: apa yang berjalan baik di ketiga aspek tersebut, apa yang perlu diperhatikan (termasuk kendala operasional dari EO dan isu keamanan dari Security Team), dan rekomendasi singkat untuk konser berikutnya. Tulis hanya paragraf naratifnya saja, tanpa judul, tanpa penomoran bagian, tanpa preamble.`
+Fokus pada insight yang actionable untuk manajemen: apa yang berjalan baik di kedua aspek tersebut, apa yang perlu diperhatikan (termasuk performa tiket/keuangan dari EO dan isu keamanan dari Security Team), dan rekomendasi singkat untuk konser berikutnya. Tulis hanya paragraf naratifnya saja, tanpa judul, tanpa penomoran bagian, tanpa preamble.`
 }
 
 // Attempts a real Claude API call for a richer narrative insight.

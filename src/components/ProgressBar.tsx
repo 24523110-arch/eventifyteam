@@ -18,7 +18,7 @@ const TONE_GRADIENT: Record<string, string> = {
 export function ProgressBar({ value, tone = 'primary', className, delay = 0 }: ProgressBarProps) {
   const clamped = Math.max(0, Math.min(100, value))
   return (
-    <div className={cn('w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden', className)}>
+    <div className={cn('w-full h-1.5 rounded-full bg-glass/[0.06] overflow-hidden', className)}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}

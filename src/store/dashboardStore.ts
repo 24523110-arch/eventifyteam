@@ -59,6 +59,12 @@ interface DashboardState {
   incidentMetrics: IncidentMetrics | null
   lastUpdated: number | null
   fetchDashboard: (opts?: { silent?: boolean }) => Promise<void>
+  // Manual report entry — Admin/Event Organizer files finance & ticket
+  // figures by hand; Security files audience attendance (they're the ones
+  // physically counting people in). Replaces the old simulator-driven values.
+  updateFinance: (revenue: number, expenses: number) => Promise<boolean>
+  updateTicketSummary: (input: { sold: number; remaining: number }) => Promise<boolean>
+  updateAttendance: (attendance: number) => Promise<boolean>
 }
 
 function buildKpis(
@@ -107,7 +113,7 @@ function buildKpis(
 // by the /api/dashboard endpoint (PostgreSQL) instead of static dummy data.
 // The concert schedule itself (create/edit/delete/Live toggle) lives in
 // eventStore — this store just reflects whichever concert is active.
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>((set, get) => ({
   isLoading: false,
   concertInfo: EMPTY_CONCERT_INFO,
   revenueTrend: [],
@@ -144,6 +150,45 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         const message = err instanceof ApiError ? err.message : 'Gagal memuat data dashboard.'
         useToastStore.getState().show(message, 'error')
       }
+    }
+  },
+
+  updateFinance: async (revenue, expenses) => {
+    try {
+      await api.put('/api/finance', { revenue, expenses })
+      useToastStore.getState().show('Laporan keuangan berhasil disimpan.', 'success')
+      await get().fetchDashboard({ silent: true })
+      return true
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Gagal menyimpan laporan keuangan.'
+      useToastStore.getState().show(message, 'error')
+      return false
+    }
+  },
+
+  updateTicketSummary: async (input) => {
+    try {
+      await api.put('/api/ticket-sales', input)
+      useToastStore.getState().show('Data tiket berhasil disimpan.', 'success')
+      await get().fetchDashboard({ silent: true })
+      return true
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Gagal menyimpan data tiket.'
+      useToastStore.getState().show(message, 'error')
+      return false
+    }
+  },
+
+  updateAttendance: async (attendance) => {
+    try {
+      await api.put('/api/attendance', { attendance })
+      useToastStore.getState().show('Data kehadiran penonton berhasil disimpan.', 'success')
+      await get().fetchDashboard({ silent: true })
+      return true
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Gagal menyimpan data kehadiran.'
+      useToastStore.getState().show(message, 'error')
+      return false
     }
   },
 }))

@@ -2,7 +2,7 @@
 // This always works with no external dependency, and serves as the
 // fallback if the Claude API call fails or is unavailable.
 export function buildLocalInsight(input) {
-  const { ticketSummary, attendance, financeSummary, concertInfo, fieldReports = [], incidentSummary, recentIncidents = [] } = input
+  const { ticketSummary, attendance, financeSummary, concertInfo, incidentSummary, recentIncidents = [] } = input
 
   const soldPlusRemaining = ticketSummary.sold + ticketSummary.remaining
   const sellThroughRate = soldPlusRemaining > 0 ? ((ticketSummary.sold / soldPlusRemaining) * 100).toFixed(1) : '0.0'
@@ -23,10 +23,6 @@ export function buildLocalInsight(input) {
     `Tingkat refund berada pada ${refundRate}%, yang ${Number(refundRate) < 1 ? 'tergolong sangat rendah dan sehat' : 'sebaiknya dipantau pada event berikutnya'}.`,
   ].join('')
 
-  const operationalParagraph = fieldReports.length
-    ? `Dari sisi operasional lapangan, Event Organizer mengirimkan ${fieldReports.length} laporan selama konser berlangsung, mencakup kategori ${[...new Set(fieldReports.map((r) => r.category))].join(', ')}. Catatan yang paling menonjol: "${fieldReports[0].title}" — ${fieldReports[0].content}`
-    : `Tidak ada laporan operasional lapangan yang tercatat dari Event Organizer untuk konser ini.`
-
   const incidentCount = incidentSummary?.totalCount ?? 0
   const criticalCount = incidentSummary?.bySeverity?.critical ?? 0
   const highCount = incidentSummary?.bySeverity?.high ?? 0
@@ -39,7 +35,7 @@ export function buildLocalInsight(input) {
     ? `Dari sisi keamanan, Security Team menangani ${incidentCount} insiden (${criticalCount} kritis, ${highCount} tinggi) selama konser, dengan ${incidentSummary.resolvedCount} di antaranya telah terselesaikan ${responseText}. Kondisi keamanan secara umum ${securityTone}${recentIncidents[0] ? `; insiden terbaru tercatat di area ${recentIncidents[0].area}` : ''}.`
     : `Tidak ada insiden keamanan yang tercatat oleh Security Team selama konser berlangsung — kondisi keamanan terkendali penuh.`
 
-  const closingParagraph = `Secara keseluruhan, konser ini menunjukkan keberhasilan operasional, keamanan, dan finansial yang saling melengkapi, dan dapat dijadikan acuan untuk perencanaan konser serupa di masa mendatang.`
+  const closingParagraph = `Secara keseluruhan, konser ini menunjukkan keberhasilan keamanan dan finansial yang saling melengkapi, dan dapat dijadikan acuan untuk perencanaan konser serupa di masa mendatang.`
 
-  return [financeParagraph, operationalParagraph, securityParagraph, closingParagraph].join('\n\n')
+  return [financeParagraph, securityParagraph, closingParagraph].join('\n\n')
 }

@@ -29,7 +29,7 @@ export function AdminDashboard() {
       <GlassCard delay={0.03} hover={false}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${isLive ? 'bg-status-danger/15 border-status-danger/30' : 'bg-white/[0.06] border-white/10'}`}>
+            <div className={`p-2.5 rounded-xl border ${isLive ? 'bg-status-danger/15 border-status-danger/30' : 'bg-glass/[0.06] border-glass/10'}`}>
               <Radio className={`w-5 h-5 ${isLive ? 'text-status-danger' : 'text-ink-faint'}`} />
             </div>
             <div>

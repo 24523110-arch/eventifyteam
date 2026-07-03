@@ -7,7 +7,7 @@ const TONE_STYLES: Record<StatusTone, string> = {
   warning: 'bg-status-warning/15 text-status-warning border border-status-warning/30',
   danger: 'bg-status-danger/15 text-status-danger border border-status-danger/30',
   info: 'bg-status-info/15 text-status-info border border-status-info/30',
-  neutral: 'bg-white/[0.06] text-ink-faint border border-white/10',
+  neutral: 'bg-glass/[0.06] text-ink-faint border border-glass/10',
 }
 
 // Maps every status string used across modules to a visual tone

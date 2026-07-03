@@ -140,28 +140,13 @@ export interface FinanceSummary {
   margin: number
 }
 
-// AI Report generation (Manager only). The server assembles ticket/finance
-// data, the EO's field reports, and Security's incident record itself for
-// the active concert — the client only triggers generation and reads the result.
+// AI Report generation (Manager only). The server assembles the Admin/EO's
+// ticket & finance report and Security's incident record itself for the
+// active concert — the client only triggers generation and reads the result.
 export interface ReportGenerationResult {
   generatedAt: string
   insight: string
   pdfBase64: string
-}
-
-// Manual on-site report submitted by the Admin/Event Organizer, surfaced in
-// the Manager's Reports view (EO → Manager reporting pipeline) and folded
-// into the AI evaluation report. Security/incident reporting is excluded —
-// that already belongs to the Security Team's Incident Center.
-export type FieldReportCategory = 'Operasional' | 'Vendor' | 'Tiket' | 'Umum'
-
-export interface FieldReport {
-  id: string
-  author: string
-  category: string
-  title: string
-  content: string
-  createdAt: string
 }
 
 // Concert schedule entry managed by the Admin/Event Organizer: many concerts

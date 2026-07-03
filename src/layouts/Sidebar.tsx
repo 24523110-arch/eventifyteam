@@ -32,7 +32,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </div>
           <span className="text-base font-display font-bold tracking-tight">EVENTIFY</span>
         </div>
-        <button onClick={onMobileClose} className="lg:hidden p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint">
+        <button onClick={onMobileClose} className="lg:hidden p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -53,7 +53,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                   isActive
                     ? 'bg-neon-gradient text-white shadow-glow-sm'
-                    : 'text-ink-faint hover:text-ink hover:bg-white/[0.05]'
+                    : 'text-ink-faint hover:text-ink hover:bg-glass/[0.05]'
                 )
               }
             >
@@ -64,7 +64,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-1">
+      <div className="pt-3 mt-3 border-t border-glass/[0.06] space-y-1">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
           <div className="w-7 h-7 rounded-full bg-neon-gradient flex items-center justify-center text-xs font-bold shrink-0">
             {user.avatarInitials}
@@ -88,7 +88,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 glass border-r border-white/[0.06] px-3 py-5">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 glass border-r border-glass/[0.06] px-3 py-5">
         {content}
       </aside>
 
@@ -108,7 +108,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25 }}
-              className="fixed top-0 left-0 z-50 flex flex-col w-72 h-screen glass border-r border-white/[0.06] px-3 py-5 lg:hidden"
+              className="fixed top-0 left-0 z-50 flex flex-col w-72 h-screen glass border-r border-glass/[0.06] px-3 py-5 lg:hidden"
             >
               {content}
             </motion.aside>

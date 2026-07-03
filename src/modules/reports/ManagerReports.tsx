@@ -1,30 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, FileText, Download, CheckCircle2, AlertCircle, Ticket, Users, Wallet, TrendingUp, Inbox } from 'lucide-react'
+import { Sparkles, FileText, Download, CheckCircle2, AlertCircle, Ticket, Users, Wallet, TrendingUp } from 'lucide-react'
 import { useDashboardStore } from '@/store/dashboardStore'
-import { useFieldReportStore } from '@/store/fieldReportStore'
 import { useToastStore } from '@/store/toastStore'
 import { GlassCard } from '@/components/GlassCard'
-import { StatusBadge } from '@/components/StatusBadge'
 import { generateEvaluationReport, downloadPdfFromBase64, ReportServiceError } from '@/services/reportService'
 import type { ReportGenerationResult } from '@/types'
 
 const PROCESS_STEPS = [
-  { id: 1, label: 'Mengumpulkan data tiket & keuangan' },
-  { id: 2, label: 'Menggabungkan laporan lapangan Event Organizer' },
-  { id: 3, label: 'Menggabungkan ringkasan keamanan Security Team' },
-  { id: 4, label: 'Menganalisis performa konser secara rinci' },
-  { id: 5, label: 'Menyusun laporan evaluasi PDF' },
+  { id: 1, label: 'Mengumpulkan laporan tiket & keuangan Event Organizer' },
+  { id: 2, label: 'Menggabungkan ringkasan keamanan Security Team' },
+  { id: 3, label: 'Menganalisis performa konser secara rinci' },
+  { id: 4, label: 'Menyusun laporan evaluasi PDF' },
 ]
 
 export function ManagerReports() {
   const { ticketSummary, financeSummary, concertInfo } = useDashboardStore()
-  const fieldReports = useFieldReportStore((s) => s.reports)
   const showToast = useToastStore((s) => s.show)
-
-  useEffect(() => {
-    useFieldReportStore.getState().fetchReports()
-  }, [])
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
@@ -38,15 +30,15 @@ export function ManagerReports() {
     setActiveStep(1)
 
     // Visual step progression while the request is in flight — the server
-    // does the real assembly (tickets/finance + EO field reports + Security
-    // incident record) for the active concert.
+    // does the real assembly (EO ticket/finance report + Security incident
+    // record) for the active concert.
     const stepTimer = setInterval(() => {
-      setActiveStep((s) => (s < 4 ? s + 1 : s))
+      setActiveStep((s) => (s < 3 ? s + 1 : s))
     }, 700)
 
     try {
       const res = await generateEvaluationReport()
-      setActiveStep(5)
+      setActiveStep(4)
       setResult(res)
       showToast('Laporan evaluasi konser berhasil dibuat.', 'success')
     } catch (err) {
@@ -168,7 +160,7 @@ export function ManagerReports() {
                         ? 'bg-status-success/20 text-status-success border border-status-success/40'
                         : isActive
                         ? 'bg-primary/20 text-primary border border-primary/40'
-                        : 'bg-white/[0.05] text-ink-faint border border-white/10'
+                        : 'bg-glass/[0.05] text-ink-faint border border-glass/10'
                     }`}
                   >
                     {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : step.id}
@@ -193,35 +185,6 @@ export function ManagerReports() {
           )}
         </GlassCard>
       </div>
-
-      {/* Manual field reports piped in from the Admin/Event Organizer on-site */}
-      <GlassCard delay={0.15} hover={false}>
-        <div className="flex items-center gap-2.5 mb-5">
-          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-            <Inbox className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-display font-semibold text-ink">Laporan Lapangan dari Event Organizer</h2>
-            <p className="text-xs text-ink-faint mt-0.5">Laporan manual dari lokasi konser, masuk secara real-time.</p>
-          </div>
-        </div>
-        {fieldReports.length === 0 ? (
-          <p className="text-sm text-ink-faint py-6 text-center">Belum ada laporan lapangan masuk.</p>
-        ) : (
-          <div className="space-y-2.5 max-h-96 overflow-y-auto scrollbar-thin">
-            {fieldReports.map((r) => (
-              <div key={r.id} className="glass rounded-xl p-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-ink">{r.title}</span>
-                  <StatusBadge status={r.category} className="shrink-0" />
-                </div>
-                <p className="text-xs text-ink-faint mt-1 leading-relaxed">{r.content}</p>
-                <span className="text-[10px] text-ink-faint/70 mt-1 block">{r.author} · {r.createdAt}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
     </div>
   )
 }

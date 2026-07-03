@@ -139,13 +139,13 @@ export function IncidentCenter() {
               header: 'Actions',
               render: (i) => (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => setViewing(i)} title="View details" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-primary transition-colors">
+                  <button onClick={() => setViewing(i)} title="View details" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-primary transition-colors">
                     <Eye className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleEdit(i)} title="Edit" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-ink transition-colors">
+                  <button onClick={() => handleEdit(i)} title="Edit" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-ink transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setDeleteTarget(i)} title="Delete" className="p-1.5 rounded-lg hover:bg-white/[0.06] text-ink-faint hover:text-status-danger transition-colors">
+                  <button onClick={() => setDeleteTarget(i)} title="Delete" className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-status-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

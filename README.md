@@ -6,15 +6,19 @@ Dark neon purple, glassmorphism concert MIS — revised down to 3 roles with ful
 
 | Role | Pages |
 |---|---|
-| **Manager** | Dashboard, Finance, Reports (AI evaluation report **+ incoming field reports from the EO**), User Management, Settings |
-| **Admin / Event Organizer** | Dashboard, **Concert Schedule** (multi-event CRUD + Mulai Live/Akhiri Konser), Ticket Sales, Vendor Management, Reports (operational **+ submit field reports**), Settings |
-| **Security Team** | Dashboard, Live Monitoring, Crowd Monitoring, Incident Center, Settings |
+| **Manager** | Dashboard, Finance, Reports (AI evaluation report), User Management |
+| **Admin / Event Organizer** | Dashboard, **Concert Schedule** (multi-event CRUD + Mulai Live/Akhiri Konser), Vendor Management, **Reports & Ticket Sales** (manual ticket + finance report) |
+| **Security Team** | Dashboard, Live Monitoring, **Crowd Monitoring (manual attendance input)**, Incident Center (track/assign/resolve incidents) |
 
-**Reporting flow (EO → Manager → AI):** the Admin/Event Organizer monitors the concert on-site and files manual **field reports** (Operasional / Vendor / Tiket / Umum — security topics are excluded, that's the Security Team's own Incident Center). Field reports land in the Manager's Reports view in real time and ping the Manager's bell. When the Manager clicks **Generate Evaluation Report**, the backend assembles ticket/finance data + all field reports from the EO + the Security Team's incident record (counts by severity, resolution status, avg response time) for the active concert, and hands all of it to Claude for one detailed narrative evaluation — the PDF includes dedicated sections for each source.
+**Manual reporting (MIS, not simulated):** the Admin/Event Organizer's **Reports & Ticket Sales** page is a single merged feature — one form reports **Tiket Terjual**, **Tiket Tersisa**, **Total Pendapatan**, and **Total Pengeluaran** (no refund input; profit, margin, and ticket revenue are always server-computed from those four figures). That report is what feeds the Manager's AI evaluation — there's no separate "field report" step. Audience attendance is **not** an Admin figure — the Security Team enters it on Crowd Monitoring (they're the ones physically counting people in at the gates), alongside their existing incident tracking/assign/resolve workflow. The live simulator only drives crowd-zone density (for Live/Crowd Monitoring) — it no longer touches finance, ticket, or attendance figures.
 
-**Concert schedule:** the Admin/Event Organizer manages many concerts — Scheduled (belum berlangsung), Live (sedang berlangsung), or Ended (riwayat, editable/deletable). Only one concert is Live at a time; starting a new one automatically ends whichever was previously Live. Every operational module (dashboards, vendors, incidents, notifications, field reports, the live simulator) automatically follows whichever concert is Live — real-time monitoring runs while `Live` and freezes the moment it's marked `Ended`.
+**Reporting flow → AI:** when the Manager clicks **Generate Evaluation Report**, the backend assembles the Admin/EO's ticket & finance report + the Security Team's incident record (counts by severity, resolution status, avg response time) for the active concert, and hands it all to Claude for one detailed narrative evaluation — the PDF includes a section per source.
+
+**Concert schedule:** the Admin/Event Organizer manages many concerts — Scheduled (belum berlangsung), Live (sedang berlangsung), or Ended (riwayat, editable/deletable). Only one concert is Live at a time; starting a new one automatically ends whichever was previously Live. Every operational module (dashboards, vendors, incidents, notifications, the live simulator) automatically follows whichever concert is Live — real-time monitoring runs while `Live` and freezes the moment it's marked `Ended`.
 
 **Notifications are role-specific**: Security sees incident/security alerts, Admin sees vendor/ticket updates, Manager sees finance/report/system — plus untargeted `system` announcements (like concert status changes) reach everyone.
+
+**Dark/light theme**: a single toggle button in the Navbar (next to the notification bell) switches the whole app between the default dark neon-purple theme and a light theme — one click, persisted across sessions. There's no separate Settings page for any role; it's been removed.
 
 Menus are hidden (not disabled) per role in the sidebar, and routes are guarded client-side via `RoleRoute` — visiting another role's URL directly redirects to your own dashboard. Access is **also enforced server-side**: login issues a JWT, every API request carries it as a Bearer token, and writes are restricted to the owning role (a security user cannot `POST /api/users`, etc.). The session persists across refreshes and is cleared on 401.
 
@@ -33,14 +37,15 @@ security@eventify.io / security123
   - Vendor Management (Admin) — create, edit, delete, search, status filter
   - Incident Center (Security) — create, edit, delete, search, status actions (Escalate/Resolve/Close) in a detail dialog
 - **Notifications**: bell panel opens, mark-as-read, mark-all-as-read, clear all — all persisted.
-- **AI Concert Evaluation Report (Manager → Reports)**: one click triggers the backend, which assembles ticket/finance data, the EO's field reports, and the Security Team's incident summary for the active concert, generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary covering the same three aspects), builds a PDF via `pdfkit` with a section per source, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
+- **AI Concert Evaluation Report (Manager → Reports)**: one click triggers the backend, which assembles the Admin/EO's ticket & finance report and the Security Team's incident summary for the active concert, generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary covering the same two aspects), builds a PDF via `pdfkit` with a section per source, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
 - **Concert Schedule (Admin → Concert Schedule)**: full CRUD over many concerts (create, edit, delete history), plus Mulai Live/Akhiri Konser actions. Creating a schedule provisions a zeroed operational scaffold (finance, ticketing, crowd zones, trend buckets) so the dashboard and live simulator have real data the moment it goes Live.
+- **Dark/light theme**: single-button toggle in the Navbar next to the notification bell (`src/store/themeStore.ts`) — flips a `.light` class on `<html>` that swaps a handful of CSS custom properties (`src/app/index.css`), re-theming every component with no per-component changes. Persisted to `localStorage`.
 - **Responsive**: sidebar becomes a slide-in drawer on mobile/tablet (`<lg`), all grids collapse to single/double column.
-- **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `referenceStore`, `settingsStore`, `toastStore`. Every store hydrates from the Express API on load and pushes CRUD actions back to it — there are no static data files left in the frontend. Even the form dropdown options (role list, security teams, vendor categories) come from the database via `GET /api/reference`.
+- **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `eventStore`, `referenceStore`, `themeStore`, `toastStore`. Every store hydrates from the Express API on load and pushes CRUD actions back to it — there are no static data files left in the frontend. Even the form dropdown options (role list, security teams, vendor categories) come from the database via `GET /api/reference`.
 
 ## What was removed (per "less is more")
 
-Executive/Operations/Venue role split (6 roles → 3), Venue Management dashboard, Alert Center, Gate Monitoring, Sponsor Analytics, Staff Management, System Health — all deleted, not hidden, since none had real functionality and weren't in the revised role scope. Dead Export PDF/Excel/Share buttons that did nothing were removed wherever the AI report feature didn't replace them. The unused `@tanstack/react-table` dependency was removed (the project never actually used it — `DataTable` is hand-rolled).
+Executive/Operations/Venue role split (6 roles → 3), Venue Management dashboard, Alert Center, Gate Monitoring, Sponsor Analytics, Staff Management, System Health — all deleted, not hidden, since none had real functionality and weren't in the revised role scope. Dead Export PDF/Excel/Share buttons that did nothing were removed wherever the AI report feature didn't replace them. The unused `@tanstack/react-table` dependency was removed (the project never actually used it — `DataTable` is hand-rolled). The Admin/EO's free-text field-report feature and its Manager-side inbox were removed in favor of the merged **Reports & Ticket Sales** page feeding the AI report directly; the Settings page was removed for every role (its only real setting, the theme, moved to a single Navbar toggle); the separate Ticket Sales page was folded into Reports.
 
 ## Setup
 
@@ -72,29 +77,31 @@ The backend must be running for the app to work now — every module (auth, dash
 
 ```
 src/
-├── app/                 # entry, global styles
+├── app/                 # entry, global styles + theme CSS variables (index.css)
 ├── auth/login/           # SplashSection, LoginFormSection, LoginPage (scrollable composition)
-├── layouts/               # AppLayout, Sidebar (+ mobile drawer), Navbar, navConfig (per-role menus)
+├── layouts/               # AppLayout, Sidebar (+ mobile drawer), Navbar (+ theme toggle), navConfig
 ├── dashboard/              # manager/ (Dashboard + Finance), admin/, security/
-├── modules/                 # ticket-sales, vendor-management (+CRUD dialog), live-monitoring,
-│                             # crowd-monitoring, incident-center (+CRUD dialogs), reports,
-│                             # user-management (+CRUD dialog)
-├── pages/settings/            # SettingsPage
+├── modules/                 # concert-schedule (+CRUD dialog), vendor-management (+CRUD dialog),
+│                             # live-monitoring, crowd-monitoring (+attendance input),
+│                             # incident-center (+CRUD dialogs), reports (Admin: merged
+│                             # Reports & Ticket Sales; Manager: AI report), user-management (+CRUD dialog)
 ├── components/                 # GlassCard, KpiCard, StatusBadge, DataTable, ProgressBar,
 │   └── ui/                     # CrowdHeatmap, SecurityHeatmap, Toaster
 │                                 # dialog, select, input, label, button, confirm-dialog (shadcn-style)
 ├── routes/                      # router, ProtectedRoute, RoleRoute, ReportsRouter
 ├── store/                       # authStore, dashboardStore, notificationStore, userStore,
-│                                 # vendorStore, incidentStore, referenceStore, settingsStore,
-│                                 # toastStore (all fetch/mutate through src/services/api.ts)
+│                                 # vendorStore, incidentStore, eventStore, referenceStore,
+│                                 # themeStore, toastStore (all fetch/mutate through src/services/api.ts)
 ├── services/                    # api (generic fetch client), reportService (report endpoint)
 └── types/                       # domain types (3-role scope)
 
 server/
 └── src/
     ├── index.js              # Express app, mounts all routers
-    ├── db/                   # schema.sql, seed.sql, pool.js (pg Pool), migrate.js
-    ├── routes/               # auth, users, vendors, incidents, dashboard, notifications, reports
+    ├── db/                   # schema.sql, seed.sql, pool.js (pg Pool, resolveActiveEventId), migrate.js
+    ├── routes/               # auth, users, vendors, incidents, dashboard, notifications, reports,
+    │                         # events, finance, ticketSales, attendance
+    ├── services/             # incidents.js (metrics), events.js (new-concert scaffold provisioning)
     ├── utils/format.js       # Indonesian date/time + initials formatting shared by routes
     ├── claudeClient.js, insightGenerator.js, pdfBuilder.js   # AI report generation
 ```
@@ -104,7 +111,6 @@ server/
 See `server/src/db/schema.sql` for the full DDL. Summary:
 
 - `events` — one row per concert (many rows now — Scheduled/Live/Ended); `resolveActiveEventId()` in `server/src/db/pool.js` picks which one every operational route reads/writes (Live, else the most recently Ended, else the newest Scheduled)
-- `field_reports` — manual on-site reports from the Admin/EO, folded into the AI evaluation report
 - `app_users` — auth + User Management
 - `vendors` — Vendor Management
 - `security_teams`, `incidents` — Incident Center

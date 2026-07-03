@@ -11,7 +11,9 @@ import notificationRoutes from './routes/notifications.js'
 import reportRoutes from './routes/reports.js'
 import referenceRoutes from './routes/reference.js'
 import eventsRoutes from './routes/events.js'
-import fieldReportRoutes from './routes/fieldReports.js'
+import financeRoutes from './routes/finance.js'
+import ticketSalesRoutes from './routes/ticketSales.js'
+import attendanceRoutes from './routes/attendance.js'
 import { pool } from './db/pool.js'
 import { startSimulator } from './simulator.js'
 import { requireAuth, requireRole, requireRoleForWrites } from './middleware/auth.js'
@@ -52,14 +54,12 @@ app.use('/api/reports', requireAuth, requireRoleForWrites('manager'), reportRout
 // and flips a concert Live/Ended. Admin-only, including reads.
 app.use('/api/events', requireAuth, requireRole('admin'), eventsRoutes)
 
-// Field reports: read by Manager + Admin, submitted by Admin (EO) only.
-app.use(
-  '/api/field-reports',
-  requireAuth,
-  (req, res, next) =>
-    req.method === 'GET' ? requireRole('manager', 'admin')(req, res, next) : requireRole('admin')(req, res, next),
-  fieldReportRoutes
-)
+// Manual report entry: Admin/EO reports finance totals and ticket counts by
+// hand (replaces the old simulator-driven figures); Security reports
+// audience attendance (they're the ones physically counting people in).
+app.use('/api/finance', requireAuth, requireRole('admin'), financeRoutes)
+app.use('/api/ticket-sales', requireAuth, requireRole('admin'), ticketSalesRoutes)
+app.use('/api/attendance', requireAuth, requireRole('security'), attendanceRoutes)
 
 // Fallback error handler for anything that slips past route-level try/catch.
 app.use((err, _req, res, _next) => {

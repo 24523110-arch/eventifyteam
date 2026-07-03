@@ -85,24 +85,3 @@ export async function notifyEventStatus(event) {
   }
 }
 
-// Field report submitted by the Event Organizer → alerts the Manager, whose
-// Reports view is where these land (EO → Manager reporting pipeline).
-export async function notifyFieldReport(report) {
-  try {
-    await createNotification({
-      eventId: report.event_id,
-      category: 'system',
-      priority: 'medium',
-      targetRole: 'manager',
-      title: `Laporan lapangan: ${report.title}`,
-      message: `${report.author_name} mengirim laporan ${report.category} dari lokasi.`,
-    })
-    await createActivity({
-      eventId: report.event_id,
-      category: 'system',
-      message: `${report.author_name} mengirim laporan lapangan "${report.title}".`,
-    })
-  } catch (err) {
-    console.error('Failed to emit field-report notification:', err)
-  }
-}

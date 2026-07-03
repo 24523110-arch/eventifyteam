@@ -2,12 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens — RGB triplets (space-separated) so Tailwind's <alpha-value>
+   opacity modifiers keep working. Dark is the default; toggling the .light
+   class on <html> (see src/store/themeStore.ts) swaps every value below,
+   which re-themes the whole app without touching component classes. */
+:root {
+  --surface-void: 10 7 21;
+  --surface-base: 16 13 31;
+  --surface-raised: 20 17 36;
+  --surface-overlay: 27 22 48;
+  --ink: 255 255 255;
+  --ink-muted: 196 181 253;
+  --ink-faint: 139 133 168;
+  --glass-rgb: 255 255 255;
+  color-scheme: dark;
+}
+
+.light {
+  --surface-void: 244 243 250;
+  --surface-base: 255 255 255;
+  --surface-raised: 250 249 253;
+  --surface-overlay: 237 233 246;
+  --ink: 23 17 41;
+  --ink-muted: 91 33 182;
+  --ink-faint: 100 92 130;
+  --glass-rgb: 20 17 36;
+  color-scheme: light;
+}
+
 @layer base {
   * {
-    @apply border-white/5;
-  }
-  html {
-    color-scheme: dark;
+    @apply border-glass/5;
   }
   body {
     @apply bg-surface-void text-ink font-sans antialiased;
@@ -39,7 +64,7 @@
 @layer components {
   /* Core glass panel used across all cards, sidebars, modals */
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08];
+    @apply bg-glass/[0.03] backdrop-blur-xl border border-glass/[0.08];
   }
   .glass-panel {
     @apply glass rounded-2xl shadow-glass;
