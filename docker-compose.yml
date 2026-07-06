@@ -7,7 +7,8 @@
 #   Backend  : http://localhost:4000  (health: /api/health)
 #   Database : localhost:5432         (postgres / postgres / eventify)
 #
-# Login demo: manager@eventify.io / manager123  (juga admin & security)
+# Tidak ada akun demo bawaan — lihat server/README.md untuk bootstrap
+# akun Manager pertama, lalu buat akun lain via User Management.
 # =====================================================================
 
 services:
@@ -35,9 +36,9 @@ services:
       DEFAULT_EVENT_ID: evt-001
       # Secret untuk menandatangani JWT sesi login. WAJIB diganti di produksi.
       JWT_SECRET: ${JWT_SECRET:-eventify-dev-secret-change-me}
-      # Live data feed (simulasi ticketing + sensor crowd). Set 'false' untuk
-      # mematikan; SIMULATOR_TICK_MS mengatur interval update (default 8000).
-      SIMULATOR_ENABLED: ${SIMULATOR_ENABLED:-true}
+      # Simulator kerumunan MATI secara default — data zona adalah snapshot
+      # statis realistis, bukan sensor. Set 'true' hanya untuk demo/stress.
+      SIMULATOR_ENABLED: ${SIMULATOR_ENABLED:-false}
       SIMULATOR_TICK_MS: ${SIMULATOR_TICK_MS:-8000}
       # Opsional — kalau diisi, laporan AI pakai Claude API; kalau kosong,
       # otomatis fallback ke ringkasan lokal deterministik.

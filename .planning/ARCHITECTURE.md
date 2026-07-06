@@ -30,14 +30,13 @@ The `events` table holds many concerts (`Scheduled` / `Live` / `Ended`), not jus
 2. Else, the most recently `Ended` concert (so data stays visible right after a concert wraps, instead of the dashboard going blank).
 3. Else, the newest `Scheduled` concert.
 
-Creating a new concert (`POST /api/events`, admin-only) provisions a **zeroed operational scaffold** — `finance_summary`, `ticket_summary`, `crowd_zones` (proportional to capacity), and the trend-bucket tables — via `server/src/services/events.js`, so the moment it goes Live there's real data for the dashboard and simulator to read/mutate instead of an empty state.
+Creating a new concert (`POST /api/events`, admin-only) provisions a **zeroed operational scaffold** — `finance_summary`, `ticket_summary`, `crowd_zones` (proportional to capacity), and the trend-bucket tables — via `server/src/services/events.js`, so the moment it goes Live there's real data for the dashboard to read instead of an empty state.
 
 ## Real-time layer
 
-Two independent mechanisms combine to make the app feel live without a websocket:
+**Client polling** (`src/hooks/useRealtimePolling.ts`) refetches dashboard/notifications/incidents every 8s in "silent" mode (no loading flash, no error toast spam), plus on tab-focus. This is what propagates *human* changes (a new incident, an updated attendance count, a filed ticket report) to every open screen.
 
-1. **Client polling** (`src/hooks/useRealtimePolling.ts`) — refetches dashboard/notifications/incidents every 8s in "silent" mode (no loading flash, no error toast spam), plus on tab-focus.
-2. **Server-side live simulator** (`server/src/simulator.js`) — an in-process interval that only runs while a concert is `Live`. It random-walks **crowd-zone density only** (standing in for real crowd sensors) and auto-files a security incident + notification when a zone crosses a critical threshold. It deliberately does **not** touch ticket counts, finance totals, or attendance — those are manual MIS entries (see below), and simulating them would fight with what a human just typed in.
+**There is no simulated sensor feed.** Crowd-zone occupancy is a static snapshot in the database — it only changes when someone changes it. `server/src/simulator.js` (random-walks zone density + auto-files incidents on critical zones, only while a concert is `Live`) is retained purely as an opt-in demo/stress tool: off unless `SIMULATOR_ENABLED=true`. It never touches ticket counts, finance totals, or attendance — those are manual MIS entries (see below).
 
 ## Manual reporting (the MIS half)
 

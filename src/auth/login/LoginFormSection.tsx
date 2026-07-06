@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, ChevronDown, Check, Music4, AlertCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ChevronDown, Check, Music4, AlertCircle, BarChart3, CalendarClock, Shield } from 'lucide-react'
 import { useReferenceStore } from '@/store/referenceStore'
 import { useAuthStore, ROLE_TO_DASHBOARD } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -12,6 +12,14 @@ interface FieldErrors {
   email?: string
   password?: string
 }
+
+// Demo-only quick-login shortcuts. These credentials exist as dummy rows in
+// the database (not seed.sql) — remove this block for a real deployment.
+const DEMO_ACCOUNTS: { role: UserRole; label: string; icon: typeof BarChart3; email: string; password: string }[] = [
+  { role: 'manager', label: 'Manager', icon: BarChart3, email: 'muhammad.wahyu.ramadhani@eventify.io', password: 'eventify123' },
+  { role: 'admin', label: 'Admin / EO', icon: CalendarClock, email: 'budi.santoso@eventify.io', password: 'eventify123' },
+  { role: 'security', label: 'Security', icon: Shield, email: 'siti.aisyah@eventify.io', password: 'eventify123' },
+]
 
 export function LoginFormSection() {
   const navigate = useNavigate()
@@ -30,6 +38,7 @@ export function LoginFormSection() {
   const [roleOpen, setRoleOpen] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [touched, setTouched] = useState(false)
+  const [demoLoading, setDemoLoading] = useState<UserRole | null>(null)
 
   const selectedRole = roleOptions.find((r) => r.value === role)
 
@@ -59,6 +68,17 @@ export function LoginFormSection() {
     if (success) {
       showToast('Berhasil masuk. Mengarahkan ke dashboard…', 'success')
       navigate(ROLE_TO_DASHBOARD[role])
+    }
+  }
+
+  async function handleDemoLogin(account: (typeof DEMO_ACCOUNTS)[number]) {
+    clearError()
+    setDemoLoading(account.role)
+    const success = await login(account.email, account.password, account.role, true)
+    setDemoLoading(null)
+    if (success) {
+      showToast(`Masuk sebagai demo ${account.label}.`, 'success')
+      navigate(ROLE_TO_DASHBOARD[account.role])
     }
   }
 
@@ -217,11 +237,38 @@ export function LoginFormSection() {
           </button>
         </form>
 
-        <div className="text-center text-xs text-ink-faint mt-8 space-y-1">
-          <p>Demo accounts:</p>
-          <p className="font-mono">manager@eventify.io / manager123</p>
-          <p className="font-mono">admin@eventify.io / admin123</p>
-          <p className="font-mono">security@eventify.io / security123</p>
+        <div className="mt-7">
+          <div className="flex items-center gap-3 text-xs text-ink-faint">
+            <div className="h-px flex-1 bg-glass/10" />
+            <span>Demo — masuk cepat sebagai</span>
+            <div className="h-px flex-1 bg-glass/10" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {DEMO_ACCOUNTS.map((account) => {
+              const Icon = account.icon
+              const loading = demoLoading === account.role
+              return (
+                <button
+                  key={account.role}
+                  type="button"
+                  disabled={isLoading || demoLoading !== null}
+                  onClick={() => handleDemoLogin(account)}
+                  className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border border-glass/10 bg-glass/[0.04] text-ink-faint hover:text-ink hover:border-primary/40 hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {loading ? (
+                    <motion.div
+                      className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 0.7, ease: 'linear' }}
+                    />
+                  ) : (
+                    <Icon className="w-4 h-4" />
+                  )}
+                  <span className="text-xs font-medium">{account.label}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </motion.div>
     </section>

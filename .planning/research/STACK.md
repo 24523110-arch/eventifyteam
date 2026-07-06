@@ -43,5 +43,5 @@ Dark (default) and light themes are driven entirely by CSS custom properties (`s
 |---|---|
 | An ORM (Prisma/Drizzle/TypeORM) | The route surface is small enough (a dozen resources) that raw parameterized SQL stays readable; adding an ORM would be a migration-tooling cost with no query the app actually needs help writing. |
 | Redux / any global-state library beyond Zustand | No cross-cutting state that Zustand's per-domain stores don't already cover. |
-| A job queue (BullMQ, etc.) | The only "background" work is the live crowd-density simulator (`server/src/simulator.js`), an in-process `setInterval` — single-server deployment, no retry/reliability requirement. |
+| A job queue (BullMQ, etc.) | The only "background" work is the opt-in demo crowd-density simulator (`server/src/simulator.js`, off by default), an in-process `setInterval` — single-server deployment, no retry/reliability requirement. |
 | Payment processing SDKs | Explicitly out of scope — ticket revenue/expenses are manually reported figures, not processed transactions. |

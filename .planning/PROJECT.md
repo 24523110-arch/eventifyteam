@@ -20,7 +20,7 @@ Revised down from the original 5-actor PRD scope (Executive Management, Operatio
 
 - **Scope**: Web-based only — no native mobile apps
 - **Payments**: No payment processing — ticket revenue and expenses are reported manually by the Event Organizer, not processed by the system
-- **Reporting model**: Ticket counts, finance totals, and attendance are **manual MIS entries** (reported by the role that owns that data in real life), not simulated/auto-generated. Only crowd-zone density and its resulting incidents are live-simulated (standing in for real crowd sensors, per the original PRD's assumption of integrated sensors).
+- **Reporting model**: Every figure in the system is **manually entered or a static snapshot** — ticket counts, finance totals, and attendance are manual MIS entries (reported by the role that owns that data in real life), and crowd-zone occupancy is a fixed realistic snapshot, not a simulated sensor feed. Nothing changes unless a person changes it. (A random-walk crowd simulator exists as an opt-in demo tool, `SIMULATOR_ENABLED=true`, off by default.)
 - **Single active concert**: Many concerts can be scheduled/tracked as history, but only one is ever "Live" at a time — that's the one every operational screen (dashboards, vendors, incidents, notifications) reflects.
 
 ### Success Metrics (from the original PRD)

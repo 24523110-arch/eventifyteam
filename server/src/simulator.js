@@ -1,20 +1,14 @@
-// Live data simulator — stands in for the real crowd sensors the PRD assumes
-// are integrated. On every tick it random-walks crowd density in the
-// database so Live/Crowd Monitoring actually moves in real time, and raises
-// an incident + alert when a zone breaches its safe threshold (FR-005 /
-// FR-015 / FR-016).
+// Live data simulator — OFF by default. Eventify no longer pretends to have
+// integrated crowd sensors: crowd-zone occupancy is a static snapshot in the
+// database, incidents are filed by the Security Team, and ticket/finance/
+// attendance figures are manual report entries (Admin/EO via PUT /api/finance
+// and /api/ticket-sales, Security via PUT /api/attendance). Nothing changes
+// unless a person changes it.
 //
-// Ticket sales, finance totals, and audience attendance are NOT simulated —
-// those are manual report entries (Admin/EO for finance & tickets via
-// PUT /api/finance and /api/ticket-sales, Security for attendance via
-// PUT /api/attendance), matching how a real MIS is fed from human-reported
-// figures rather than a random walk.
-//
-// The feed only runs against whichever concert the Event Organizer has
-// marked 'Live' (PATCH /api/events/:id/status) — if none is live, the tick
-// is a no-op.
-//
-// Toggle with SIMULATOR_ENABLED=false; pace with SIMULATOR_TICK_MS.
+// This module is kept only as an opt-in demo/stress tool: set
+// SIMULATOR_ENABLED=true to random-walk crowd density (and auto-file
+// incidents on critical zones) against whichever concert is 'Live';
+// pace with SIMULATOR_TICK_MS.
 
 import { query } from './db/pool.js'
 import { createIncident, setIncidentStatus } from './services/incidents.js'
@@ -139,8 +133,8 @@ async function simulateIncidentProgress(eventId) {
 }
 
 export function startSimulator() {
-  if (process.env.SIMULATOR_ENABLED === 'false') {
-    console.log('[simulator] disabled (SIMULATOR_ENABLED=false)')
+  if (process.env.SIMULATOR_ENABLED !== 'true') {
+    console.log('[simulator] disabled — crowd data is a static snapshot (set SIMULATOR_ENABLED=true to opt in)')
     return
   }
   if (timer) return

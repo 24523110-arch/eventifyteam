@@ -24,6 +24,11 @@ function validateInput(body) {
   return null
 }
 
+function validatePassword(password) {
+  if (!password || password.length < 8) return 'Password wajib diisi, minimal 8 karakter.'
+  return null
+}
+
 // GET /api/users
 router.get('/', async (_req, res) => {
   try {
@@ -38,24 +43,20 @@ router.get('/', async (_req, res) => {
   }
 })
 
-// POST /api/users  { name, email, role }
+// POST /api/users  { name, email, role, password }
 router.post('/', async (req, res) => {
-  const validationError = validateInput(req.body)
+  const validationError = validateInput(req.body) || validatePassword(req.body?.password)
   if (validationError) return res.status(400).json({ error: validationError })
 
-  const { name, email, role } = req.body
+  const { name, email, role, password } = req.body
   const id = `u-${Date.now()}`
-  // No password is collected from the create-user form (matches the
-  // existing frontend). A random temp password is set; the user resets
-  // it out-of-band. Hashing happens in SQL via pgcrypto, no bcrypt dep needed.
-  const tempPassword = Math.random().toString(36).slice(2, 12)
 
   try {
     const { rows } = await query(
       `INSERT INTO app_users (id, name, email, password_hash, role, avatar_initials, status)
        VALUES ($1, $2, $3, crypt($4, gen_salt('bf')), $5, $6, 'active')
        RETURNING id, name, email, role, avatar_initials, status, last_login_at`,
-      [id, name, email, tempPassword, role, initials(name)]
+      [id, name, email, password, role, initials(name)]
     )
     res.status(201).json(toAppUser(rows[0]))
   } catch (err) {

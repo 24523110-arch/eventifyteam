@@ -10,11 +10,11 @@ Dark neon purple, glassmorphism concert MIS — revised down to 3 roles with ful
 | **Admin / Event Organizer** | Dashboard, **Concert Schedule** (multi-event CRUD + Mulai Live/Akhiri Konser), Vendor Management, **Reports & Ticket Sales** (manual ticket + finance report) |
 | **Security Team** | Dashboard, Live Monitoring, **Crowd Monitoring (manual attendance input)**, Incident Center (track/assign/resolve incidents) |
 
-**Manual reporting (MIS, not simulated):** the Admin/Event Organizer's **Reports & Ticket Sales** page is a single merged feature — one form reports **Tiket Terjual**, **Tiket Tersisa**, **Total Pendapatan**, and **Total Pengeluaran** (no refund input; profit, margin, and ticket revenue are always server-computed from those four figures). That report is what feeds the Manager's AI evaluation — there's no separate "field report" step. Audience attendance is **not** an Admin figure — the Security Team enters it on Crowd Monitoring (they're the ones physically counting people in at the gates), alongside their existing incident tracking/assign/resolve workflow. The live simulator only drives crowd-zone density (for Live/Crowd Monitoring) — it no longer touches finance, ticket, or attendance figures.
+**Manual reporting (MIS, not simulated):** the Admin/Event Organizer's **Reports & Ticket Sales** page is a single merged feature — one form reports **Tiket Terjual**, **Tiket Tersisa**, **Total Pendapatan**, and **Total Pengeluaran** (no refund input; profit, margin, and ticket revenue are always server-computed from those four figures). That report is what feeds the Manager's AI evaluation — there's no separate "field report" step. Audience attendance is **not** an Admin figure — the Security Team enters it on Crowd Monitoring (they're the ones physically counting people in at the gates), alongside their existing incident tracking/assign/resolve workflow. **Crowd-zone occupancy is a static snapshot in the database, not a live sensor feed** — nothing in the app changes unless a person changes it. (An optional random-walk simulator still exists for demos/stress tests but is off by default; enable with `SIMULATOR_ENABLED=true`.)
 
 **Reporting flow → AI:** when the Manager clicks **Generate Evaluation Report**, the backend assembles the Admin/EO's ticket & finance report + the Security Team's incident record (counts by severity, resolution status, avg response time) for the active concert, and hands it all to Claude for one detailed narrative evaluation — the PDF includes a section per source.
 
-**Concert schedule:** the Admin/Event Organizer manages many concerts — Scheduled (belum berlangsung), Live (sedang berlangsung), or Ended (riwayat, editable/deletable). Only one concert is Live at a time; starting a new one automatically ends whichever was previously Live. Every operational module (dashboards, vendors, incidents, notifications, the live simulator) automatically follows whichever concert is Live — real-time monitoring runs while `Live` and freezes the moment it's marked `Ended`.
+**Concert schedule:** the Admin/Event Organizer manages many concerts — Scheduled (belum berlangsung), Live (sedang berlangsung), or Ended (riwayat, editable/deletable). Only one concert is Live at a time; starting a new one automatically ends whichever was previously Live. Every operational module (dashboards, vendors, incidents, notifications) automatically follows whichever concert is Live.
 
 **Notifications are role-specific**: Security sees incident/security alerts, Admin sees vendor/ticket updates, Manager sees finance/report/system — plus untargeted `system` announcements (like concert status changes) reach everyone.
 
@@ -22,23 +22,18 @@ Dark neon purple, glassmorphism concert MIS — revised down to 3 roles with ful
 
 Menus are hidden (not disabled) per role in the sidebar, and routes are guarded client-side via `RoleRoute` — visiting another role's URL directly redirects to your own dashboard. Access is **also enforced server-side**: login issues a JWT, every API request carries it as a Bearer token, and writes are restricted to the owning role (a security user cannot `POST /api/users`, etc.). The session persists across refreshes and is cleared on 401.
 
-Demo accounts (shown on the login screen):
-```
-manager@eventify.io  / manager123
-admin@eventify.io    / admin123
-security@eventify.io / security123
-```
+**No demo accounts** — the database starts empty (only role/lookup reference data is seeded). There's no self-registration screen, so the very first Manager account has to be inserted directly into `app_users` (see [server/README.md](server/README.md#first-login-no-demo-accounts)); every other account is then created through **User Management → Create User**, with a real password set at creation time.
 
 ## What's functional
 
 - **Splash + Login**: scrollable landing hero above a real login form — email format validation, password length validation, role selector, remember me, loading state, inline + banner error messages, redirect to the correct dashboard per role. Auth is checked against PostgreSQL (`POST /api/auth/login`, bcrypt via `pgcrypto`).
 - **CRUD (Shadcn-style Dialog + Select, all wired to Zustand stores → REST API → PostgreSQL)**:
-  - User Management (Manager) — create, edit, enable/disable, delete, search
+  - User Management (Manager) — create (with a real password the new user logs in with immediately), edit, enable/disable, delete, search
   - Vendor Management (Admin) — create, edit, delete, search, status filter
   - Incident Center (Security) — create, edit, delete, search, status actions (Escalate/Resolve/Close) in a detail dialog
 - **Notifications**: bell panel opens, mark-as-read, mark-all-as-read, clear all — all persisted.
 - **AI Concert Evaluation Report (Manager → Reports)**: one click triggers the backend, which assembles the Admin/EO's ticket & finance report and the Security Team's incident summary for the active concert, generates a narrative insight (Claude API if `ANTHROPIC_API_KEY` is set server-side, else a deterministic local summary covering the same two aspects), builds a PDF via `pdfkit` with a section per source, and saves a record to the `reports` table. Full loading state with step progression, success/error toasts, and a working PDF download.
-- **Concert Schedule (Admin → Concert Schedule)**: full CRUD over many concerts (create, edit, delete history), plus Mulai Live/Akhiri Konser actions. Creating a schedule provisions a zeroed operational scaffold (finance, ticketing, crowd zones, trend buckets) so the dashboard and live simulator have real data the moment it goes Live.
+- **Concert Schedule (Admin → Concert Schedule)**: full CRUD over many concerts (create, edit, delete history), plus Mulai Live/Akhiri Konser actions. Creating a schedule provisions a zeroed operational scaffold (finance, ticketing, crowd zones, trend buckets) so the dashboard has real rows to read the moment it goes Live.
 - **Dark/light theme**: single-button toggle in the Navbar next to the notification bell (`src/store/themeStore.ts`) — flips a `.light` class on `<html>` that swaps a handful of CSS custom properties (`src/app/index.css`), re-theming every component with no per-component changes. Persisted to `localStorage`.
 - **Responsive**: sidebar becomes a slide-in drawer on mobile/tablet (`<lg`), all grids collapse to single/double column.
 - **Zustand stores**, one per domain: `authStore`, `dashboardStore`, `notificationStore`, `userStore`, `vendorStore`, `incidentStore`, `eventStore`, `referenceStore`, `themeStore`, `toastStore`. Every store hydrates from the Express API on load and pushes CRUD actions back to it — there are no static data files left in the frontend. Even the form dropdown options (role list, security teams, vendor categories) come from the database via `GET /api/reference`.
@@ -60,7 +55,7 @@ createdb eventify
 cd server
 npm install
 cp .env.example .env        # set DATABASE_URL, optionally ANTHROPIC_API_KEY
-npm run db:migrate          # creates tables + loads seed data
+npm run db:migrate          # creates tables + loads reference (lookup) data — see server/README.md to bootstrap the first login
 npm run dev
 ```
 

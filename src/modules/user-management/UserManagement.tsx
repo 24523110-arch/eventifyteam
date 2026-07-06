@@ -44,7 +44,7 @@ export function UserManagement() {
     setFormOpen(true)
   }
 
-  function handleFormSubmit(input: { name: string; email: string; role: UserRole }) {
+  function handleFormSubmit(input: { name: string; email: string; role: UserRole; password: string }) {
     if (editing) {
       updateUser(editing.id, input)
       showToast(`${input.name} updated.`, 'success')

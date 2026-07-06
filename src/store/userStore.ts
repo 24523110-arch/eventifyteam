@@ -10,7 +10,7 @@ interface UserState {
   fetchUsers: () => Promise<void>
   setSearchQuery: (q: string) => void
   filteredUsers: () => AppUser[]
-  createUser: (input: { name: string; email: string; role: UserRole }) => Promise<void>
+  createUser: (input: { name: string; email: string; role: UserRole; password: string }) => Promise<void>
   updateUser: (id: string, input: { name: string; email: string; role: UserRole }) => Promise<void>
   deleteUser: (id: string) => Promise<void>
   toggleUserStatus: (id: string) => Promise<void>
