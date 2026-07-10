@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, ChevronDown, Menu, CheckCheck, Trash2, Sun, Moon } from 'lucide-react'
+import { Bell, Menu, CheckCheck, Trash2, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 import { useNotificationStore } from '@/store/notificationStore'
@@ -193,13 +193,6 @@ export function Navbar({ onMobileMenuOpen }: NavbarProps) {
             )}
           </AnimatePresence>
         </div>
-
-        <button className="flex items-center gap-2 p-1 pr-2 rounded-xl glass hover:border-primary/30 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-neon-gradient flex items-center justify-center text-xs font-bold">
-            {user.avatarInitials}
-          </div>
-          <ChevronDown className="w-3.5 h-3.5 text-ink-faint hidden sm:block" />
-        </button>
       </div>
     </header>
   )
