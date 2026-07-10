@@ -10,6 +10,31 @@ import { formatIDR } from '@/utils'
 
 const PIE_COLORS = ['#A855F7', '#D946EF', '#EC4899', '#9333EA', '#7C3AED']
 
+const RADIAN = Math.PI / 180
+
+// Slice labels (category + share) drawn outside the donut — the legend alone
+// was unreadable at this size. Fill uses the ink tokens so it themes.
+function renderPieLabel({ cx, cy, midAngle, outerRadius, percent, name }: {
+  cx: number; cy: number; midAngle: number; outerRadius: number; percent: number; name: string
+}) {
+  const r = outerRadius + 16
+  const x = cx + r * Math.cos(-midAngle * RADIAN)
+  const y = cy + r * Math.sin(-midAngle * RADIAN)
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="rgb(var(--ink-muted))"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={11}
+      fontWeight={500}
+    >
+      {`${name} ${Math.round(percent * 100)}%`}
+    </text>
+  )
+}
+
 const TONE_CLASS = {
   success: 'text-status-success bg-status-success/15 border-status-success/30',
   danger: 'text-status-danger bg-status-danger/15 border-status-danger/30',
@@ -54,9 +79,18 @@ export function FinanceDashboard() {
           <h2 className="font-display font-semibold text-ink mb-5">Expense Breakdown</h2>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={financeBreakdown} dataKey="amount" nameKey="category" innerRadius={55} outerRadius={90} paddingAngle={3}>
+              <Pie
+                data={financeBreakdown}
+                dataKey="amount"
+                nameKey="category"
+                innerRadius={45}
+                outerRadius={72}
+                paddingAngle={3}
+                label={renderPieLabel}
+                labelLine={{ stroke: 'rgb(var(--ink-faint))', strokeWidth: 1 }}
+              >
                 {financeBreakdown.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#0A0715" strokeWidth={2} />
+                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="rgb(var(--surface-void))" strokeWidth={2} />
                 ))}
               </Pie>
               <Tooltip

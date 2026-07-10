@@ -16,8 +16,8 @@ interface FieldErrors {
 // Demo-only quick-login shortcuts. These credentials exist as dummy rows in
 // the database (not seed.sql) — remove this block for a real deployment.
 const DEMO_ACCOUNTS: { role: UserRole; label: string; icon: typeof BarChart3; email: string; password: string }[] = [
-  { role: 'manager', label: 'Manager', icon: BarChart3, email: 'muhammad.wahyu.ramadhani@eventify.io', password: 'eventify123' },
-  { role: 'admin', label: 'Admin / EO', icon: CalendarClock, email: 'budi.santoso@eventify.io', password: 'eventify123' },
+  { role: 'manager', label: 'Manager', icon: BarChart3, email: 'budi.santoso@eventify.io', password: 'eventify123' },
+  { role: 'admin', label: 'Admin / EO', icon: CalendarClock, email: 'fajar.nugroho@eventify.io', password: 'eventify123' },
   { role: 'security', label: 'Security', icon: Shield, email: 'siti.aisyah@eventify.io', password: 'eventify123' },
 ]
 
