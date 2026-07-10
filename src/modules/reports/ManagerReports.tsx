@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileCheck2, Sparkles, ChevronDown, Undo2, PenLine,
-  FileDown, FileText, Printer, Mail, Link2, BadgeCheck,
+  FileDown, FileText, Printer, Mail, Link2, BadgeCheck, History, ArrowLeft,
 } from 'lucide-react'
 import { useLpjStore } from '@/store/lpjStore'
 import { useAuthStore } from '@/store/authStore'
@@ -37,7 +37,7 @@ const GROUP_ORDER = ['Admin Report', 'Finance Report', 'Ticket Report', 'Sponsor
 export function ManagerReports() {
   const user = useAuthStore((s) => s.user)
   const showToast = useToastStore((s) => s.show)
-  const { current, loaded, isGenerating, fetchActive, returnSection, generate, saveNarrative, approve, exportFile } = useLpjStore()
+  const { current, history, activeId, loaded, isGenerating, fetchActive, fetchHistory, openReport, returnSection, generate, saveNarrative, approve, exportFile } = useLpjStore()
 
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [returnTarget, setReturnTarget] = useState<LpjSection | null>(null)
@@ -48,6 +48,7 @@ export function ManagerReports() {
 
   useEffect(() => {
     fetchActive()
+    fetchHistory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -66,6 +67,9 @@ export function ManagerReports() {
   const progressPct = sections.length ? Math.round((submitted / sections.length) * 100) : 0
   const allSubmitted = sections.length > 0 && submitted === sections.length
   const approved = current?.status === 'Approved'
+  // History mode: `current` is a past concert's report, not the active one.
+  const viewingHistory = !!current && current.id !== activeId
+  const pastReports = history.filter((r) => r.id !== (current?.id ?? ''))
 
   return (
     <div className="space-y-6">
@@ -78,6 +82,21 @@ export function ManagerReports() {
         </div>
         {current && <StatusBadge status={current.status} />}
       </motion.div>
+
+      {viewingHistory && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-primary/10 border border-primary/30">
+          <span className="flex items-center gap-2 text-sm text-ink">
+            <History className="w-4 h-4 text-primary shrink-0" />
+            Sedang melihat riwayat laporan konser yang telah berlalu.
+          </span>
+          <button
+            onClick={() => fetchActive()}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke laporan konser aktif
+          </button>
+        </div>
+      )}
 
       {!loaded ? (
         <p className="text-sm text-ink-faint py-8 text-center">Memuat…</p>
@@ -257,6 +276,45 @@ export function ManagerReports() {
             </div>
           </GlassCard>
         </>
+      )}
+
+      {loaded && pastReports.length > 0 && (
+        <GlassCard hover={false}>
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+              <History className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display font-semibold text-ink">Riwayat Laporan Konser</h2>
+              <p className="text-xs text-ink-faint mt-0.5">Laporan konser yang telah berlalu — buka untuk melihat detail atau unduh dokumennya.</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {pastReports.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-glass/10 hover:border-primary/30 transition-colors"
+              >
+                <button onClick={() => openReport(r.id)} className="flex-1 text-left min-w-0">
+                  <div className="font-medium text-ink truncate">{r.concertName}</div>
+                  <div className="text-xs text-ink-faint mt-0.5">
+                    {r.location} · {r.eventDate}
+                    {r.progress ? ` · ${r.progress.submitted}/${r.progress.total} bagian` : ''}
+                    {r.approvedAt ? ` · disetujui ${r.approvedAt}` : ''}
+                  </div>
+                </button>
+                <StatusBadge status={r.status} />
+                <button
+                  onClick={() => exportFile(r.id, 'pdf')}
+                  title="Unduh PDF"
+                  className="p-1.5 rounded-lg hover:bg-glass/[0.06] text-ink-faint hover:text-primary transition-colors shrink-0"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
       )}
 
       <Dialog open={!!returnTarget} onOpenChange={(o) => !o && setReturnTarget(null)}>

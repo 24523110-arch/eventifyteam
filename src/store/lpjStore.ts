@@ -9,10 +9,18 @@ import { useToastStore } from '@/store/toastStore'
 // Incident Center, Manager's Reports) shares this `current` report.
 interface LpjState {
   current: LpjReport | null
+  // Reports of past concerts (history) — every report in the system; the
+  // Manager can open one read-only or export it.
+  history: LpjReport[]
+  // Id of the ACTIVE concert's report, so pages can tell when `current` is
+  // actually a history entry being viewed.
+  activeId: string | null
   loaded: boolean
   isLoading: boolean
   isGenerating: boolean
   fetchActive: () => Promise<void>
+  fetchHistory: () => Promise<void>
+  openReport: (id: string) => Promise<void>
   createReport: (input: LpjCreateInput) => Promise<boolean>
   deleteReport: (id: string) => Promise<void>
   saveSection: (id: string, key: string, data: LpjSectionData) => Promise<boolean>
@@ -31,6 +39,8 @@ function reportError(err: unknown, fallback: string) {
 
 export const useLpjStore = create<LpjState>((set, get) => ({
   current: null,
+  history: [],
+  activeId: null,
   loaded: false,
   isLoading: false,
   isGenerating: false,
@@ -39,10 +49,30 @@ export const useLpjStore = create<LpjState>((set, get) => ({
     set({ isLoading: true })
     try {
       const { report } = await api.get<{ report: LpjReport | null }>('/api/lpj/active')
-      set({ current: report, loaded: true, isLoading: false })
+      set({ current: report, activeId: report?.id ?? null, loaded: true, isLoading: false })
     } catch (err) {
       set({ isLoading: false, loaded: true })
       reportError(err, 'Gagal memuat laporan konser aktif.')
+    }
+  },
+
+  fetchHistory: async () => {
+    try {
+      const history = await api.get<LpjReport[]>('/api/lpj')
+      set({ history })
+    } catch (err) {
+      reportError(err, 'Gagal memuat riwayat laporan.')
+    }
+  },
+
+  openReport: async (id) => {
+    set({ isLoading: true })
+    try {
+      const report = await api.get<LpjReport>(`/api/lpj/${id}`)
+      set({ current: report, isLoading: false })
+    } catch (err) {
+      set({ isLoading: false })
+      reportError(err, 'Gagal membuka laporan.')
     }
   },
 
@@ -92,7 +122,7 @@ export const useLpjStore = create<LpjState>((set, get) => ({
   submitReport: async (id) => {
     try {
       await api.post(`/api/lpj/${id}/submit`)
-      await get().fetchActive()
+      await (get().activeId === id ? get().fetchActive() : get().openReport(id))
       useToastStore.getState().show('Laporan dikirim — status: Waiting Manager Review.', 'success')
       return true
     } catch (err) {
@@ -104,7 +134,7 @@ export const useLpjStore = create<LpjState>((set, get) => ({
   returnSection: async (id, key, note) => {
     try {
       await api.post(`/api/lpj/${id}/sections/${key}/return`, { note })
-      await get().fetchActive()
+      await (get().activeId === id ? get().fetchActive() : get().openReport(id))
       useToastStore.getState().show('Bagian laporan dikembalikan untuk direvisi.', 'success')
       return true
     } catch (err) {
@@ -117,7 +147,7 @@ export const useLpjStore = create<LpjState>((set, get) => ({
     set({ isGenerating: true })
     try {
       await api.post(`/api/lpj/${id}/generate`)
-      await get().fetchActive()
+      await (get().activeId === id ? get().fetchActive() : get().openReport(id))
       set({ isGenerating: false })
       useToastStore.getState().show('Narasi laporan berhasil dibuat oleh AI.', 'success')
       return true
@@ -143,7 +173,7 @@ export const useLpjStore = create<LpjState>((set, get) => ({
   approve: async (id, signature) => {
     try {
       await api.post(`/api/lpj/${id}/approve`, { signature })
-      await get().fetchActive()
+      await (get().activeId === id ? get().fetchActive() : get().openReport(id))
       useToastStore.getState().show('Laporan disetujui dan ditandatangani.', 'success')
       return true
     } catch (err) {
