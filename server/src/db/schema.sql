@@ -287,3 +287,49 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reports_event ON reports(event_id, created_at DESC);
+
+-- ---------------------------------------------------------------------
+-- LPJ (Laporan Pertanggungjawaban) — collaborative concert accountability
+-- report. Each role fills only the sections it owns (lpj_sections.owner_role);
+-- the Manager reviews, generates the AI narrative, approves, and exports.
+-- Section data is heterogeneous per section, so it lives in JSONB rather
+-- than 14 near-empty tables.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS lpj_reports (
+  id               TEXT PRIMARY KEY,
+  concert_name     TEXT NOT NULL,
+  theme            TEXT NOT NULL DEFAULT '',
+  location         TEXT NOT NULL DEFAULT '',
+  event_date       TEXT NOT NULL DEFAULT '',
+  event_time       TEXT NOT NULL DEFAULT '',
+  organizer        TEXT NOT NULL DEFAULT '',
+  description      TEXT NOT NULL DEFAULT '',
+  cover_image      TEXT NOT NULL DEFAULT '',       -- optional data-URL
+  status           TEXT NOT NULL DEFAULT 'Draft',  -- Draft|In Progress|Waiting Manager Review|Generated|Approved
+  narrative        JSONB,                          -- AI-written parts (kata pengantar, pendahuluan, ...)
+  narrative_source TEXT,                           -- 'ai' | 'local' | 'local-fallback'
+  approved_by      TEXT NOT NULL DEFAULT '',       -- manager name (digital signature)
+  approved_at      TEXT NOT NULL DEFAULT '',       -- display label
+  created_by       TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS lpj_sections (
+  report_id    TEXT NOT NULL REFERENCES lpj_reports(id) ON DELETE CASCADE,
+  section_key  TEXT NOT NULL,
+  owner_role   user_role NOT NULL,
+  data         JSONB NOT NULL DEFAULT '{}',
+  status       TEXT NOT NULL DEFAULT 'Draft',      -- Draft|In Progress|Submitted|Returned
+  manager_note TEXT NOT NULL DEFAULT '',
+  submitted_at TIMESTAMPTZ,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (report_id, section_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lpj_sections_report ON lpj_sections(report_id);
+
+-- Report Management rework: one collaborative report per concert, resolved
+-- via the active event (mirrors how Reports & Ticket Sales used to work).
+ALTER TABLE lpj_reports ADD COLUMN IF NOT EXISTS event_id TEXT REFERENCES events(id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lpj_reports_event ON lpj_reports(event_id) WHERE event_id IS NOT NULL;

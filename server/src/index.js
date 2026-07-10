@@ -14,6 +14,7 @@ import eventsRoutes from './routes/events.js'
 import financeRoutes from './routes/finance.js'
 import ticketSalesRoutes from './routes/ticketSales.js'
 import attendanceRoutes from './routes/attendance.js'
+import lpjRoutes from './routes/lpj.js'
 import { pool } from './db/pool.js'
 import { startSimulator } from './simulator.js'
 import { requireAuth, requireRole, requireRoleForWrites } from './middleware/auth.js'
@@ -24,7 +25,9 @@ const app = express()
 const PORT = process.env.PORT || 4000
 
 app.use(cors())
-app.use(express.json({ limit: '2mb' }))
+// 15mb: LPJ sections can carry a handful of base64-embedded photos
+// (dokumentasi, logo sponsor, screenshot insight, bukti keamanan).
+app.use(express.json({ limit: '15mb' }))
 
 app.get('/api/health', async (_req, res) => {
   try {
@@ -60,6 +63,12 @@ app.use('/api/events', requireAuth, requireRole('admin'), eventsRoutes)
 app.use('/api/finance', requireAuth, requireRole('admin'), financeRoutes)
 app.use('/api/ticket-sales', requireAuth, requireRole('admin'), ticketSalesRoutes)
 app.use('/api/attendance', requireAuth, requireRole('security'), attendanceRoutes)
+
+// LPJ (Laporan Pertanggungjawaban): collaborative report — admin and
+// security each write their own sections, manager reviews/approves, so the
+// per-section role checks live inside the route file (data-driven ownership,
+// see server/src/lpj/registry.js) instead of a blanket role middleware here.
+app.use('/api/lpj', requireAuth, lpjRoutes)
 
 // Fallback error handler for anything that slips past route-level try/catch.
 app.use((err, _req, res, _next) => {

@@ -164,3 +164,64 @@ export interface ConcertSchedule {
   capacity: number
   attendance: number
 }
+
+// ---------------------------------------------------------------------
+// LPJ (Laporan Pertanggungjawaban) — collaborative report. Section data is
+// schemaless on the wire (each section has its own shape, defined by
+// src/modules/lpj/sectionConfig.ts and mirrored in server/src/lpj/registry.js).
+// ---------------------------------------------------------------------
+export type LpjReportStatus = 'Draft' | 'In Progress' | 'Waiting Manager Review' | 'Generated' | 'Approved'
+export type LpjSectionStatus = 'Draft' | 'In Progress' | 'Submitted' | 'Returned'
+
+export type LpjSectionData = Record<string, unknown>
+
+export interface LpjSection {
+  key: string
+  ownerRole: UserRole
+  label: string
+  group: string
+  data: LpjSectionData
+  status: LpjSectionStatus
+  managerNote: string
+  submittedAt: string | null
+}
+
+export interface LpjNarrative {
+  kataPengantar: string
+  latarBelakang: string
+  tujuanKegiatan: string
+  temaKonser: string
+  profilKegiatan: string
+  penutup: string
+}
+
+export interface LpjReport {
+  id: string
+  concertName: string
+  theme: string
+  location: string
+  eventDate: string
+  eventTime: string
+  organizer: string
+  description: string
+  coverImage?: string
+  status: LpjReportStatus
+  narrative: LpjNarrative | null
+  narrativeSource: string | null
+  approvedBy: string
+  approvedAt: string
+  createdAt: string
+  sections?: LpjSection[]
+  progress?: { submitted: number; total: number }
+}
+
+export interface LpjCreateInput {
+  concertName: string
+  theme: string
+  location: string
+  eventDate: string
+  eventTime: string
+  organizer: string
+  description: string
+  coverImage: string
+}

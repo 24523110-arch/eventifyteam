@@ -10,7 +10,7 @@ import { FinanceDashboard } from '@/dashboard/manager/FinanceDashboard'
 import { AdminDashboard } from '@/dashboard/admin/AdminDashboard'
 import { SecurityDashboard } from '@/dashboard/security/SecurityDashboard'
 
-import { VendorManagement } from '@/modules/vendor-management/VendorManagement'
+import { ReportManagement } from '@/modules/report-management/ReportManagement'
 import { ConcertSchedule } from '@/modules/concert-schedule/ConcertSchedule'
 import { LiveMonitoring } from '@/modules/live-monitoring/LiveMonitoring'
 import { CrowdMonitoring } from '@/modules/crowd-monitoring/CrowdMonitoring'
@@ -34,10 +34,13 @@ export const router = createBrowserRouter([
               { path: '/finance', element: <FinanceDashboard /> },
               { path: '/user-management', element: <UserManagement /> },
 
-              // Admin / Event Organizer
+              // Admin / Event Organizer — Report Management replaces the old
+              // Vendor Management and Reports & Ticket Sales pages: every
+              // report (finance, tickets, vendors, sponsors, …) is entered
+              // there as sections of the active concert's report.
               { path: '/dashboard/admin', element: <AdminDashboard /> },
               { path: '/concert-schedule', element: <ConcertSchedule /> },
-              { path: '/vendor-management', element: <VendorManagement /> },
+              { path: '/report-management', element: <ReportManagement /> },
 
               // Security
               { path: '/dashboard/security', element: <SecurityDashboard /> },
@@ -45,10 +48,9 @@ export const router = createBrowserRouter([
               { path: '/crowd-monitoring', element: <CrowdMonitoring /> },
               { path: '/incident-center', element: <IncidentCenter /> },
 
-              // Reports has different content per role at the same URL —
-              // ReportsRouter decides which page to render based on role.
-              // It's guarded here like everything else since /reports is
-              // present in both manager's and admin's NAV_BY_ROLE entries.
+              // Reports (Manager): review dashboard for everything the other
+              // roles submit. ReportsRouter redirects admins to their own
+              // Report Management page.
               { path: '/reports', element: <ReportsRouter /> },
             ],
           },

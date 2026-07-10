@@ -8,6 +8,7 @@ import { GlassCard } from '@/components/GlassCard'
 import { DataTable } from '@/components/DataTable'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { SecurityReportPanel } from '@/modules/report-management/SecurityReportPanel'
 import { IncidentFormDialog } from './IncidentFormDialog'
 import { IncidentDetailDialog } from './IncidentDetailDialog'
 import type { Incident } from '@/types'
@@ -154,6 +155,15 @@ export function IncidentCenter() {
           ]}
         />
       </GlassCard>
+
+      {/* Security Team's incident-report section of the collaborative
+          concert report (the resource/statistics sections live on Crowd
+          Monitoring). */}
+      <SecurityReportPanel
+        sectionKeys={['incidents']}
+        title="Laporan Insiden (Laporan Konser)"
+        description="Rekap insiden untuk laporan pertanggungjawaban — waktu, lokasi, jenis, keparahan, kronologi, penanganan, dan status."
+      />
 
       <IncidentFormDialog open={formOpen} onOpenChange={setFormOpen} incident={editing} onSubmit={handleFormSubmit} />
       <IncidentDetailDialog incident={viewing} onOpenChange={(open) => !open && setViewing(null)} />

@@ -19,6 +19,9 @@ const STATUS_TONE_MAP: Record<string, StatusTone> = {
   not_arrived: 'neutral', closed: 'neutral', disabled: 'neutral',
   low: 'info', medium: 'warning', high: 'danger',
   Live: 'danger', Ended: 'neutral', Scheduled: 'info',
+  // LPJ report & section statuses
+  Draft: 'neutral', 'In Progress': 'warning', Submitted: 'info', Returned: 'danger',
+  'Waiting Manager Review': 'warning', Generated: 'info', Approved: 'success',
 }
 
 const STATUS_LABEL_MAP: Record<string, string> = {

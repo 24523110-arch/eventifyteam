@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { useDashboardStore } from '@/store/dashboardStore'
 import { GlassCard } from '@/components/GlassCard'
 import { CrowdHeatmap } from '@/components/CrowdHeatmap'
+import { SecurityReportPanel } from '@/modules/report-management/SecurityReportPanel'
 import { percentage, formatNumber } from '@/utils'
 
 const tooltipStyle = { background: '#141124', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 12, fontSize: 12 }
@@ -113,6 +114,15 @@ export function CrowdMonitoring() {
         <h2 className="font-display font-semibold text-ink mb-5">Zone Density</h2>
         <CrowdHeatmap zones={crowdZones} />
       </GlassCard>
+
+      {/* Security Team's slice of the collaborative concert report — the
+          safety-resource and statistics sections live here; the incident
+          report section lives on Incident Center. */}
+      <SecurityReportPanel
+        sectionKeys={['security_resources', 'security_stats']}
+        title="Laporan Keamanan & Statistik"
+        description="Isi Laporan Keamanan dan Keselamatan serta Statistik Keamanan untuk laporan pertanggungjawaban konser."
+      />
     </div>
   )
 }
